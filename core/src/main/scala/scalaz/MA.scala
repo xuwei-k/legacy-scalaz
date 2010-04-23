@@ -22,6 +22,21 @@ sealed trait MA[M[_], A] extends PimpedType[M[A]] {
   //    a ⊛ b ⊛ c apply {_ + _ + _}
   def ⊛[B](b: M[B]) = new ApplicativeBuilder[M, A, B](value, b)
 
+  import HList._
+
+  def ⊛:[B](mb: M[B]) = new ApplicativeBuilderHList[B :: A :: HNil, B :: HNil](mb :: HNil)
+
+  class ApplicativeBuilderHList[All <: HList, AllButOne <: HList](hl: AllButOne#Wrap[M]) {
+//    ap(ap(ap(t.fmap(a, f.curried), b), c), d)
+    def apply[B](f: All#Function[B])(implicit func: Functor[M], ap: Apply[M]) = {
+      def apply0[H <: HList](hl0: H) = hl0.fold[Rest, HNil]((h, t) => ap(apply0(t), h), func.fmap(a, f))
+
+      apply0(hl)
+    }
+
+    def ⊛:[B](b: M[B]) = new ApplicativeBuilderHList[B :: All, B :: AllButOne](HCons(b, hl))
+  }
+
   def <*>[B](f: M[A => B])(implicit a: Apply[M]): M[B] = a(f, value)
 
   def <**>[B, C](b: M[B])(z: (A, B) => C)(implicit t: Functor[M], a: Apply[M]): M[C] = a(t.fmap(value, z.curried), b)

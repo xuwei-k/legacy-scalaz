@@ -65,5 +65,8 @@ object ExampleApplicative {
 
     case class Person(age: Int, name: String)
     some(10) ⊛ none[String] apply Person.apply
+
+    
+    (some(10) ⊛: none[String]).apply((Person.apply _).curried)
   }
 }
