@@ -11,7 +11,7 @@ trait Arrow[A[_, _]] {
 }
 
 object Arrow {
-  import Scalaz._
+  import MA._
   
   implicit def Function1Arrow: Arrow[Function1] = new Arrow[Function1] {
     val category = Category.Function1Category
@@ -42,6 +42,9 @@ object Arrow {
   }
 
   implicit def KleisliArrow[M[_]: Monad]: Arrow[PartialApplyK[Kleisli, M]#Apply] = new Arrow[PartialApplyK[Kleisli, M]#Apply] {
+    import Kleisli._
+    import Identity._
+
     val category = Category.KleisliCategory
 
     def arrow[B, C](f: B => C) = ☆(f(_) η)
@@ -56,6 +59,10 @@ object Arrow {
   }
 
   implicit def CokleisliArrow[M[_]: Comonad]: Arrow[PartialApplyK[Cokleisli, M]#Apply] = new Arrow[PartialApplyK[Cokleisli, M]#Apply] {
+    import Cokleisli._
+    import Identity._
+    import MAB._
+    
     val category = Category.CokleisliCategory
 
     def arrow[B, C](f: B => C) = ★(r => f(r ε))

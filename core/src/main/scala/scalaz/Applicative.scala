@@ -26,7 +26,7 @@ object Applicative {
 
   import Pure._
   import Apply._
-  import Scalaz._
+  import MA._
 
   implicit def MonoidalApplicative[B: Monoid]: Applicative[PartialApply1Of2[Const, B]#Apply]
       = applicative[PartialApply1Of2[Const, B]#Apply](ConstPure, ConstApply)

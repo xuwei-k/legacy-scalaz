@@ -12,7 +12,8 @@ abstract class ApplyLow {
 }
 
 object Apply extends ApplyLow {
-  import Scalaz._
+  import MA._
+  import Identity._
 
   implicit def ConstApply[B: Monoid] = new Apply[PartialApply1Of2[Const, B]#Apply] {
     def apply[A, X](f: Const[B, A => X], fa: Const[B, A]) = Const[B, X](f.value ⊹ fa.value)
@@ -53,6 +54,7 @@ object Apply extends ApplyLow {
   implicit def MapEntryApply[X: Semigroup]: Apply[PartialApply1Of2[Entry, X]#Apply] = FunctorBindApply[PartialApply1Of2[Entry, X]#Apply]
 
   implicit def ValidationApply[X: Semigroup]: Apply[PartialApply1Of2[Validation, X]#Apply] = new Apply[PartialApply1Of2[Validation, X]#Apply] {
+    import Validation._
     def apply[A, B](f: Validation[X, A => B], a: Validation[X, A]) = (f, a) match {
       case (Success(f), Success(a)) => success(f(a))
       case (Success(_), Failure(e)) => failure(e)
@@ -62,6 +64,7 @@ object Apply extends ApplyLow {
   }
 
   implicit def ValidationFailureApply[X]: Apply[PartialApply1Of2[FailProjection, X]#Flip] = new Apply[PartialApply1Of2[FailProjection, X]#Flip] {
+    import Validation._
     def apply[A, B](f: FailProjection[A => B, X], a: FailProjection[A, X]) = ((f.validation, a.validation) match {
       case (Success(x1), Success(_)) => success(x1)
       case (Success(x1), Failure(_)) => success(x1)
@@ -71,6 +74,9 @@ object Apply extends ApplyLow {
   }
 
   implicit def ZipperApply: Apply[Zipper] = new Apply[Zipper] {
+    import Zipper._
+    import StreamW._
+
     def apply[A, B](f: Zipper[A => B], a: Zipper[A]): Zipper[B] =
       zipper((a.lefts ʐ) <*> (f.lefts ʐ),
         (f.focus)(a.focus),
@@ -78,6 +84,8 @@ object Apply extends ApplyLow {
   }
 
   implicit def ZipStreamApply: Apply[ZipStream] = new Apply[ZipStream] {
+    import StreamW._
+
     def apply[A, B](f: ZipStream[A => B], a: ZipStream[A]): ZipStream[B] = {
       val ff = f.value
       val aa = a.value
@@ -87,6 +95,10 @@ object Apply extends ApplyLow {
   }
 
   val ZipTreeApply: Apply[Tree] = new Apply[Tree] {
+    import StreamW._
+    import Tree._
+
+    
     def apply[A, B](f: Tree[A => B], a: Tree[A]): Tree[B] =
       node((f.rootLabel)(a.rootLabel), (a.subForest ʐ) <*> (f.subForest.map((apply(_: Tree[A => B], _: Tree[A])).curried) ʐ))
   }
