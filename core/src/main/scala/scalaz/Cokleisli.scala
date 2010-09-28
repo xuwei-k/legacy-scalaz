@@ -23,3 +23,5 @@ trait Cokleislis {
 
   def cokleisli[W[_], A, B](f: W[A] => B): Cokleisli[W, A, B] = ★(f)
 }
+
+object Cokleisli extends Cokleislis

@@ -1032,7 +1032,7 @@ def single[V, A](a: => A)(implicit ms: Reducer[A, V]): FingerTree[V, A] = single
       val value = v
     }
 
-    object IndSeq {
+    object IndSeq extends IndSeqs {
       def apply[A](as: A*) = fromSeq(as)
       def fromSeq[A](as: Seq[A]) = indSeq(as.foldLeft(empty[Int, A](Reducer(a => 1)))((x, y) => x :+ y)) 
     }

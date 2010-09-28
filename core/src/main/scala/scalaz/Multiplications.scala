@@ -46,5 +46,6 @@ trait Multiplications {
   }
 }
 
+object Multiplication extends Multiplications
 
 

@@ -29,10 +29,10 @@ sealed trait Promise[A] {
 }
 
 trait Promises {
-  def promise[A](a: => A)(implicit s: Strategy): Promise[A] = Promise.promise(a) 
+  def promise[A](a: => A)(implicit s: Strategy): Promise[A] = Promise(a) 
 }
 
-object Promise {
+object Promise extends Promises {
   private def mkPromise[A](implicit s: Strategy) = new Promise[A] {
     val strategy = s
     val e = actor((p: (Either[() => A, A => Unit], Promise[A])) => {
@@ -55,7 +55,7 @@ object Promise {
     override def toString = "<promise>"
   }
 
-  def promise[A](a: => A)(implicit s: Strategy): Promise[A] = {
+  def apply[A](a: => A)(implicit s: Strategy): Promise[A] = {
     val p = mkPromise[A]
     p.e ! ((Left(() => a), p))
     p

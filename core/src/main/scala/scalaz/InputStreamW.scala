@@ -40,3 +40,5 @@ trait InputStreams {
     val value = v
   }
 }
+
+object InputStreamW extends InputStreams

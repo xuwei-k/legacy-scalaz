@@ -4,15 +4,11 @@ trait Apply[Z[_]] {
   def apply[A, B](f: Z[A => B], a: Z[A]): Z[B]
 }
 
-trait Applys {
-  def FunctorBindApply[Z[_]](implicit t: Functor[Z], b: Bind[Z]) = new Apply[Z] {
+abstract class ApplyLow {
+  implicit def FunctorBindApply[Z[_]](implicit t: Functor[Z], b: Bind[Z]) = new Apply[Z] {
     def apply[A, B](f: Z[A => B], a: Z[A]): Z[B] =
       b.bind(f, (g: A => B) => t.fmap(a, g(_: A)))
   }
-}
-
-abstract class ApplyLow {
-  implicit def FunctorBindApply[Z[_]](implicit t: Functor[Z], b: Bind[Z]): Apply[Z] = Scalaz.FunctorBindApply(t, b)
 }
 
 object Apply extends ApplyLow {
@@ -35,7 +31,7 @@ object Apply extends ApplyLow {
   implicit def Tuple6Apply[R: Monoid, S: Monoid, T: Monoid, U: Monoid, V: Monoid]: Apply[PartialApply5Of6[Tuple6, R, S, T, U, V]#Apply] = FunctorBindApply[PartialApply5Of6[Tuple6, R, S, T, U, V]#Apply]
 
   implicit def Tuple7Apply[R: Monoid, S: Monoid, T: Monoid, U: Monoid, V: Monoid, W: Monoid]: Apply[PartialApply6Of7[Tuple7, R, S, T, U, V, W]#Apply] = FunctorBindApply[PartialApply6Of7[Tuple7, R, S, T, U, V, W]#Apply]
-    
+
   implicit def Function1Apply[R]: Apply[PartialApply1Of2[Function1, R]#Apply] = FunctorBindApply[PartialApply1Of2[Function1, R]#Apply]
 
   implicit def Function2Apply[R, S]: Apply[PartialApply2Of3[Function2, R, S]#Apply] = FunctorBindApply[PartialApply2Of3[Function2, R, S]#Apply]

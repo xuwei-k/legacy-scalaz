@@ -13,3 +13,5 @@ trait BigIntegers {
     val value = n
   }
 }
+
+object BigIntegerW extends BigIntegers

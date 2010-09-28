@@ -58,3 +58,5 @@ trait Trees {
 
   def leaf[A](root: A): Tree[A] = node(root, Stream.empty)
 }
+
+object Tree extends Trees

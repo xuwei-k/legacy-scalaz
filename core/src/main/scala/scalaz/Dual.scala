@@ -22,3 +22,5 @@ trait Duals {
     val value = a
   }
 }
+
+object Dual extends Duals

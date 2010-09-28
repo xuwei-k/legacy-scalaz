@@ -13,3 +13,5 @@ trait Ints {
     val value = n
   }
 }
+
+object IntW extends Ints

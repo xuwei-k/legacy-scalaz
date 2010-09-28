@@ -127,3 +127,5 @@ trait TreeLocs {
     case (Stream.cons(t, ts)) => Some(loc(t, Stream.Empty, ts, Stream.Empty))
   }
 }
+
+object TreeLoc extends TreeLocs

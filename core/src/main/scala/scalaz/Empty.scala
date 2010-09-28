@@ -10,7 +10,7 @@ trait Emptys {
   def <∅>[E[_], A](implicit e: Empty[E]): E[A] = e.empty
 }
 
-object Empty {
+object Empty extends Emptys {
   import Scalaz._
 
   implicit def ZipStreamEmpty: Empty[ZipStream] = new Empty[ZipStream] {

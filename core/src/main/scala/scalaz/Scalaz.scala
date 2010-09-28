@@ -5,7 +5,6 @@ import concurrent._
 object Scalaz extends ScalazLow
     with    Actors
     with    Alphas
-    with    Applys
     with    ArrayBytes
     with    BigIntegers
     with    BigInts

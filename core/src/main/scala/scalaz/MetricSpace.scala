@@ -22,3 +22,5 @@ trait MetricSpaces {
 
   implicit def levenshteins: MetricSpace[String] = levenshtein[List, Char] ∙ ((s: String) => s.toList)
 }
+
+object MetricSpace extends MetricSpaces

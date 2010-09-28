@@ -30,3 +30,5 @@ trait Kleislis {
 
   implicit def kleisliFn[M[_],A,B](k: Kleisli[M,A,B]): A => M[B] = (a: A) => k(a)
 }
+
+object Kleisli extends Kleislis

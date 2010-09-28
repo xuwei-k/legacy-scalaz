@@ -34,7 +34,7 @@ trait Zeros {
   def mzero[Z](implicit z: Zero[Z]): Z = z.zero
 }
 
-object Zero {
+object Zero extends Zeros {
   import Scalaz._
   import xml.{Elem, Node, NodeSeq}
 

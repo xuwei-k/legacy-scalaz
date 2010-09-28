@@ -17,7 +17,7 @@ trait Shows {
   def showBy[A, B: Show](f: A => B): Show[A] = implicitly[Show[B]] ∙ f
 }
 
-object Show {
+object Show extends Shows {
   import Scalaz._
   import Predef.{implicitly => i}
 

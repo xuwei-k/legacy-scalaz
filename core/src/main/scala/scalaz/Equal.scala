@@ -18,7 +18,7 @@ trait Equal[-A] {
 }
 
 trait Equals {
-  import Scalaz._
+  import MA._
   def equal[A](f: (A, A) => Boolean): Equal[A] = new Equal[A] {
     def equal(a1: A, a2: A) = f(a1, a2)
   }
@@ -34,8 +34,10 @@ trait Equals {
   def equalBy[A, B: Equal](f: A => B): Equal[A] = implicitly[Equal[B]] ∙ f
 }
 
-object Equal {
-  import Scalaz._
+object Equal extends Equals {
+  import Identity._
+  import MA._
+
   import java.math.BigInteger
   import xml.NodeSeq
   import Predef.{implicitly => i}
@@ -170,7 +172,7 @@ object Equal {
   
   implicit def TraversableEqual[CC[X] <: collection.TraversableLike[X, CC[X]] with Traversable[X] : CanBuildAnySelf, A: Equal]: Equal[CC[A]] = new Equal[CC[A]] {
     def equal(a: CC[A], b: CC[A]) = {
-      import Scalaz._
+      import Identity._
       implicitly[Equal[A]] match {
         case eq: NaturalEqual =>
           // Performance optimisation.

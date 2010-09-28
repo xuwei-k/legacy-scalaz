@@ -112,3 +112,5 @@ trait Options {
 
   def none[A]: Option[A] = None
 }
+
+object OptionW extends Options

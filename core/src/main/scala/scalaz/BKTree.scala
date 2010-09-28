@@ -100,3 +100,5 @@ private case object BKTreeEmpty extends BKTree[Nothing]
 trait BKTrees {
   def emptyBKTree[A]: BKTree[A] = BKTreeEmpty
 }
+
+object BKTree extends BKTrees

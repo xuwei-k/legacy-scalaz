@@ -155,3 +155,5 @@ trait Strings {
     val value = ss
   }
 }
+
+object StringW extends Strings

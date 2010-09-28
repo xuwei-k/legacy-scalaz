@@ -13,3 +13,5 @@ trait Shorts {
     val value = n
   }
 }
+
+object ShortW extends Shorts

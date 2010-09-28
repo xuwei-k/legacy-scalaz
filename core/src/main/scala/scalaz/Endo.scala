@@ -17,3 +17,5 @@ trait Endos {
 
   def idEndo[A]: Endo[A] = EndoTo[A](a => a)
 }
+
+object Endo extends Endos

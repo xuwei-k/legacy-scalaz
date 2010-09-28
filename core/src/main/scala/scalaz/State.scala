@@ -59,3 +59,5 @@ trait States {
   def gets[S,A](f: S => A): State[S, A] = 
     for (s <- init) yield f(s)
 }
+
+object State extends States

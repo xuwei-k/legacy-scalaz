@@ -45,3 +45,5 @@ trait Streams {
     val value = as
   }
 }
+
+object StreamW extends Streams

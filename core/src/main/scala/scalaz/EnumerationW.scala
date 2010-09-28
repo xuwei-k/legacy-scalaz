@@ -14,3 +14,5 @@ trait Enumerations {
     val value = v
   }
 }
+
+object EnumerationW extends Enumerations

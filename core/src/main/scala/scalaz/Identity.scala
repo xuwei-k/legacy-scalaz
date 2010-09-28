@@ -203,3 +203,5 @@ trait Identitys {
 
   val unital = IdentityTo(())
 }
+
+object Identity extends Identitys

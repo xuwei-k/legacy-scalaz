@@ -38,3 +38,5 @@ trait DLists {
 
   def emptyDList[A]: DList[A] = dlist(identity(_: List[A]))
 }
+
+object DLists extends DLists

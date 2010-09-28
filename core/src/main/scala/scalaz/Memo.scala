@@ -97,3 +97,5 @@ trait Memos {
 
   def immutableTreeMapMemo[K: scala.Ordering, V]: Memo[K, V] = immutableMapMemo(new TreeMap[K, V])
 }
+
+object Memo extends Memos

@@ -244,3 +244,5 @@ trait Zippers {
     override def toString = "<zipper>"
   }
 }
+
+object Zipper extends Zippers

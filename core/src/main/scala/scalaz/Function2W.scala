@@ -27,3 +27,5 @@ trait Function2s {
 
   implicit def Function2From[T1, T2, R](f: Function2W[T1, T2, R]): Function2[T1, T2, R] = f.k
 }
+
+object Function2W extends Function2s

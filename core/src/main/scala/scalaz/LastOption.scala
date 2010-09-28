@@ -7,3 +7,5 @@ trait LastOptions {
     val value = a
   }
 }
+
+object LastOption extends LastOptions

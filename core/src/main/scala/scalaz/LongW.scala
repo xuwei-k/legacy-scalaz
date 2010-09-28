@@ -16,3 +16,5 @@ trait Longs {
     val value = n
   }
 }
+
+object LongW extends Longs

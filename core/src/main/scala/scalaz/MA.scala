@@ -10,7 +10,7 @@ sealed trait MA[M[_], A] extends PimpedType[M[A]] {
   /**
    * Returns a MA with the type parameter `M` equal to [A] M[N[A]], given that type `A` is constructed from type constructor `N`.
    * This allows composition of type classes for `M` and `N`. For example:
-   * <code>(List(List(1)).comp.map {2 +}) assert_≟ List(List(3))</code>
+   * <code>(List(List(1)).comp.map  { 2 + } ) assert_≟ List(List(3))</code>
    */
   def comp[N[_], B](implicit n: A <:< N[B], f: Functor[M]): MA[Comp[M, N]#Apply, B] = ma[Comp[M, N]#Apply, B](value ∘ n)
 
@@ -40,19 +40,19 @@ sealed trait MA[M[_], A] extends PimpedType[M[A]] {
 
   def <|**|>[B, C](b: M[B], c: M[C])(implicit t: Functor[M], a: Apply[M]): M[(A, B, C)] = <***>(b, c)((_, _, _))
 
-  def <|***|>[B, C, D](b: M[B], c: M[C], d: M[D])(implicit t: Functor[M], a: Apply[M]): M[(A, B, C, D)] = <****>(b, c, d)( (_, _, _, _))
+  def <|***|>[B, C, D](b: M[B], c: M[C], d: M[D])(implicit t: Functor[M], a: Apply[M]): M[(A, B, C, D)] = <****>(b, c, d)((_, _, _, _))
 
   def <|****|>[B, C, D, E](b: M[B], c: M[C], d: M[D], e: M[E])(implicit t: Functor[M], a: Apply[M]): M[(A, B, C, D, E)] = <*****>(b, c, d, e)((_, _, _, _, _))
 
   def xmap[B](f: A => B)(g: B => A)(implicit xf: InvariantFunctor[M]): M[B] = xf.xmap(value, f, g)
-  
+
   def ↦[F[_], B](f: A => F[B])(implicit a: Applicative[F], t: Traverse[M]): F[M[B]] =
     traverse(f)
 
-  def traverse[F[_],B](f: A => F[B])(implicit a: Applicative[F], t: Traverse[M]): F[M[B]] =
+  def traverse[F[_], B](f: A => F[B])(implicit a: Applicative[F], t: Traverse[M]): F[M[B]] =
     t.traverse(f, value)
 
-  def traverse_[F[_],B](f: A => F[B])(implicit a: Applicative[F], t: Foldable[M]): F[Unit] =
+  def traverse_[F[_], B](f: A => F[B])(implicit a: Applicative[F], t: Foldable[M]): F[Unit] =
     value.foldl(().pure)(((x, y) => x <* f(y)))
 
   def >>=[B](f: A => M[B])(implicit b: Bind[M]): M[B] = b.bind(value, f)
@@ -81,7 +81,7 @@ sealed trait MA[M[_], A] extends PimpedType[M[A]] {
 
   def foreach(f: A => Unit)(implicit e: Each[M]): Unit = e.each(value, f)
 
-  def |>|(f: A => Unit)(implicit e: Each[M]): Unit = foreach (f)
+  def |>|(f: A => Unit)(implicit e: Each[M]): Unit = foreach(f)
 
   def foldl[B](b: B)(f: (B, A) => B)(implicit r: Foldable[M]): B = r.foldLeft[A, B](value, b, f)
 
@@ -174,21 +174,22 @@ sealed trait MA[M[_], A] extends PimpedType[M[A]] {
    * Selects groups of elements that satisfy p and discards others.
    */
   def selectSplit(p: A => Boolean)(implicit r: Foldable[M]): List[List[A]] =
-    foldr((nil[List[A]], false))((a, xb) => xb match {
-      case (x, b) => {
-        val pa = p(a)
-        (if (pa)
-          if (b)
-            (a :: x.head) :: x.tail else
-            List(a) :: x
-        else x, pa)
-      }
-    })._1
+    foldr((nil[List[A]], false))((a, xb) =>
+      xb match {
+        case (x, b) => {
+          val pa = p(a)
+          (if (pa)
+            if (b)
+              (a :: x.head) :: x.tail else
+              List(a) :: x
+          else x, pa)
+        }
+      })._1
 
   def para[B](b: B, f: (=> A, => M[A], B) => B)(implicit p: Paramorphism[M]): B = p.para(value, b, f)
 
   def ↣[B](f: A => B)(implicit t: Traverse[M], m: Monoid[B]): B = foldMapDefault(f)
-  
+
   def foldMapDefault[B](f: A => B)(implicit t: Traverse[M], m: Monoid[B]): B = {
     t.traverse[PartialApply1Of2[Const, B]#Apply, A, B](a => Const[B, B](f(a)), value)
   }
@@ -228,7 +229,7 @@ sealed trait MA[M[_], A] extends PimpedType[M[A]] {
     k(l.len(value), l.len(w))
   }
 
-  def ifM[B](t: => M[B], f: => M[B])(implicit a: Monad[M], b: A <:< Boolean): M[B] = ∗ ((x: A) => if (x) t else f)
+  def ifM[B](t: => M[B], f: => M[B])(implicit a: Monad[M], b: A <:< Boolean): M[B] = ∗((x: A) => if (x) t else f)
 
   def foldLeftM[N[_], B](b: B)(f: (B, A) => N[B])(implicit fr: Foldable[M], m: Monad[N]): N[B] =
     foldl[N[B]](b η)((b, a) => b ∗ ((z: B) => f(z, a)))
@@ -238,7 +239,7 @@ sealed trait MA[M[_], A] extends PimpedType[M[A]] {
 
   def replicateM[N[_]](n: Int)(implicit m: Monad[M], p: Pure[N], d: Monoid[N[A]]): M[N[A]] =
     if (n <= 0) ∅[N[A]].η[M]
-    else value ∗ (a => replicateM[N](n - 1) ∘ (a +>: _) )
+    else value ∗ (a => replicateM[N](n - 1) ∘ (a +>: _))
 
   def zipWithA[F[_], B, C](b: M[B])(f: (A, B) => F[C])(implicit a: Applicative[M], t: Traverse[M], z: Applicative[F]): F[M[C]] =
     (b <*> (a.fmap(value, f.curried))).sequence[F, C]
@@ -249,11 +250,11 @@ sealed trait MA[M[_], A] extends PimpedType[M[A]] {
   def fpair(implicit f: Functor[M]): M[(A, A)] = ∘(_.pair)
 
   def foldReduce[B](implicit f: Foldable[M], r: Reducer[A, B]) = foldMap(_.unit[B])(f, r)
-  
+
   import FingerTree._
-  def &:(a: A) = OnL[M,A](a, value)
-  
-  def :&(a: A) = OnR[M,A](value, a)
+  def &:(a: A) = OnL[M, A](a, value)
+
+  def :&(a: A) = OnR[M, A](value, a)
 
   import concurrent._
   def parMap[B](f: A => B)(implicit s: Strategy, t: Traverse[M]): Promise[M[B]] =
@@ -273,7 +274,7 @@ trait MACofunctor[M[_], A] extends PimpedType[M[A]] {
   def ∙[B](f: B => A)(implicit t: Cofunctor[M]): M[B] = t.comap(value, f)
 
   /**
-   * Alias for {@link scalaz.MACofunctor#∙}
+   * Alias for  { @link scalaz.MACofunctor # ∙ }
    */
   def comap[B](f: B => A)(implicit t: Cofunctor[M]): M[B] = ∙(f)
 
@@ -294,6 +295,70 @@ trait MAsLow {
   implicit def maCofunctorImplicit[M[_], A](a: M[A]): MACofunctor[M, A] = new MACofunctor[M, A] {
     val value = a
   }
+}
+
+class MACompanionLow extends MAsLow
+
+object MA extends MACompanionLow with MAs {
+  implicit def EitherLeftMA[X, A](a: Either.LeftProjection[A, X]) = ma[PartialApply1Of2[Either.LeftProjection, X]#Flip, A](a)
+
+  implicit def EitherRightMA[X, A](a: Either.RightProjection[X, A]): MA[PartialApply1Of2[Either.RightProjection, X]#Apply, A] = ma[PartialApply1Of2[Either.RightProjection, X]#Apply, A](a)
+
+  implicit def Function1FlipMACofunctor[A, R](f: R => A): MACofunctor[PartialApply1Of2[Function1, A]#Flip, R] = maCofunctor[PartialApply1Of2[Function1, A]#Flip, R](f)
+
+  implicit def Function1ApplyMA[A, R](f: A => R): MA[PartialApply1Of2[Function1, A]#Apply, R] = ma[PartialApply1Of2[Function1, A]#Apply, R](f)
+
+  implicit def Function2MA[R, S, A](a: (R, S) => A): MA[PartialApply2Of3[Function2, R, S]#Apply, A] = ma[PartialApply2Of3[Function2, R, S]#Apply, A](a)
+
+  implicit def Function3MA[R, S, T, A](a: (R, S, T) => A): MA[PartialApply3Of4[Function3, R, S, T]#Apply, A] = ma[PartialApply3Of4[Function3, R, S, T]#Apply, A](a)
+
+  implicit def Function4MA[R, S, T, U, A](a: (R, S, T, U) => A): MA[PartialApply4Of5[Function4, R, S, T, U]#Apply, A] = ma[PartialApply4Of5[Function4, R, S, T, U]#Apply, A](a)
+
+  implicit def Function5MA[R, S, T, U, V, A](a: (R, S, T, U, V) => A): MA[PartialApply5Of6[Function5, R, S, T, U, V]#Apply, A] = ma[PartialApply5Of6[Function5, R, S, T, U, V]#Apply, A](a)
+
+  implicit def Function6MA[R, S, T, U, V, W, A](a: (R, S, T, U, V, W) => A): MA[PartialApply6Of7[Function6, R, S, T, U, V, W]#Apply, A] = ma[PartialApply6Of7[Function6, R, S, T, U, V, W]#Apply, A](a)
+
+  implicit def ConstMA[B, A](c: Const[B, A]): MA[PartialApply1Of2[Const, B]#Apply, A] = ma[PartialApply1Of2[Const, B]#Apply, A](c)
+
+  implicit def StateMA[S, A](s: State[S, A]): MA[PartialApply1Of2[State, S]#Apply, A] = ma[PartialApply1Of2[State, S]#Apply, A](s)
+
+  implicit def Tuple2MA[R, A](a: (R, A)): MA[PartialApply1Of2[Tuple2, R]#Apply, A] = ma[PartialApply1Of2[Tuple2, R]#Apply, A](a)
+
+  implicit def Tuple3MA[R, S, A](a: (R, S, A)): MA[PartialApply2Of3[Tuple3, R, S]#Apply, A] = ma[PartialApply2Of3[Tuple3, R, S]#Apply, A](a)
+
+  implicit def Tuple4MA[R, S, T, A](a: (R, S, T, A)): MA[PartialApply3Of4[Tuple4, R, S, T]#Apply, A] = ma[PartialApply3Of4[Tuple4, R, S, T]#Apply, A](a)
+
+  implicit def Tuple5MA[R, S, T, U, A](a: (R, S, T, U, A)): MA[PartialApply4Of5[Tuple5, R, S, T, U]#Apply, A] = ma[PartialApply4Of5[Tuple5, R, S, T, U]#Apply, A](a)
+
+  implicit def Tuple6MA[R, S, T, U, V, A](a: (R, S, T, U, V, A)): MA[PartialApply5Of6[Tuple6, R, S, T, U, V]#Apply, A] = ma[PartialApply5Of6[Tuple6, R, S, T, U, V]#Apply, A](a)
+
+  implicit def Tuple7MA[R, S, T, U, V, W, A](a: (R, S, T, U, V, W, A)): MA[PartialApply6Of7[Tuple7, R, S, T, U, V, W]#Apply, A] = ma[PartialApply6Of7[Tuple7, R, S, T, U, V, W]#Apply, A](a)
+
+  implicit def ValidationMA[A, E](v: Validation[E, A]): MA[PartialApply1Of2[Validation, E]#Apply, A] = ma[PartialApply1Of2[Validation, E]#Apply, A](v)
+
+  implicit def ValidationFailureMA[A, E](f: FailProjection[E, A]): MA[PartialApply1Of2[FailProjection, A]#Flip, E] = ma[PartialApply1Of2[FailProjection, A]#Flip, E](f)
+
+  implicit def IterVMA[A, E](v: IterV[E, A]): MA[PartialApply1Of2[IterV, E]#Apply, A] = ma[PartialApply1Of2[IterV, E]#Apply, A](v)
+
+  import java.util.Map.Entry
+
+  implicit def MapEntryMA[X, A](e: Entry[X, A]): MA[PartialApply1Of2[Entry, X]#Apply, A] = ma[PartialApply1Of2[Entry, X]#Apply, A](e)
+
+  // Seq[A] implements Function1[Int, A]. Without this, Function1ApplyMA would be used.
+  implicit def SeqMA[M[X] <: Seq[X], A](l: M[A]): MA[M, A] = ma[M, A](l)
+
+  // Set[A] implements Function1[Int, B]. Without this, Function1ApplyMA would be used.
+  implicit def SetMA[M[X] <: Set[X], A](s: M[A]): MA[M, A] = ma[M, A](s)
+
+  implicit def KleisliMA[M[_], A, B](k: Kleisli[M, A, B]): MA[PartialApplyKA[Kleisli, M, A]#Apply, B] = ma[PartialApplyKA[Kleisli, M, A]#Apply, B](k)
+
+  implicit def FingerTreeMA[V, A](t: FingerTree[V, A]): MA[PartialApply1Of2[FingerTree, V]#Apply, A] = ma[PartialApply1Of2[FingerTree, V]#Apply, A](t)
+
+  implicit def FingerMA[V, A](t: Finger[V, A]): MA[PartialApply1Of2[Finger, V]#Apply, A] = ma[PartialApply1Of2[Finger, V]#Apply, A](t)
+
+  implicit def NodeMA[V, A](t: Node[V, A]): MA[PartialApply1Of2[Node, V]#Apply, A] = ma[PartialApply1Of2[Node, V]#Apply, A](t)
+
+  implicit def MemoMA[V, A](m: Memo[A, V]): MA[PartialApply1Of2[Memo, V]#Flip, A] = ma[PartialApply1Of2[Memo, V]#Flip, A](m)
 }
 
 trait MAs {

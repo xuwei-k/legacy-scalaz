@@ -7,3 +7,5 @@ trait FirstOptions {
     val value = a
   }
 }
+
+object FirstOption extends FirstOptions

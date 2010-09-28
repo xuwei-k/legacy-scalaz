@@ -11,3 +11,5 @@ trait Bytes {
     val value = n
   }
 }
+
+object ByteW extends Bytes

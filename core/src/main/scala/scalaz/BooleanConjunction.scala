@@ -7,3 +7,5 @@ trait BooleanConjunctions {
     val value = b
   }
 }
+
+object BooleanConjunction extends BooleanConjunctions

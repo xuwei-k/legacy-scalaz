@@ -111,3 +111,5 @@ trait Validations {
 
   def validation[E, A](e: Either[E, A]): Validation[E, A] = e.fold(Failure(_), Success(_))
 }
+
+object Validation extends Validations

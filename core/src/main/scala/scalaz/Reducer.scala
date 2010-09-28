@@ -86,3 +86,9 @@ trait Reducers {
 
 
 }
+
+object Reducer extends Reducers {
+  def apply[C, M: Monoid](unit: C => M) = super[Reducers].Reducer[C, M](unit)
+
+  def apply[M: Monoid]: Reducer[M, M] = super[Reducers].Reducer(x => x)
+}

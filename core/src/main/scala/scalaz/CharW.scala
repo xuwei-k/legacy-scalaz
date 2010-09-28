@@ -15,3 +15,5 @@ trait Chars {
     val value = c
   }
 }
+
+object CharW extends Chars

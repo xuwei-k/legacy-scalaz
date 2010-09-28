@@ -31,7 +31,7 @@ trait SemigroupLow {
   }  
 }
 
-object Semigroup extends SemigroupLow {
+object Semigroup extends SemigroupLow with Semigroups {
   import Scalaz._
   import xml.NodeSeq
 

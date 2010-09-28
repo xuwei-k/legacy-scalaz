@@ -109,3 +109,5 @@ trait Lists {
 
   def nil[A]: List[A] = Nil
 }
+
+object ListW extends Lists

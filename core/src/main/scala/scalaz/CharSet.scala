@@ -23,3 +23,5 @@ trait CharSets {
 
   val UTF16 = charset("UTF-16")
 }
+
+object CharSet extends CharSets

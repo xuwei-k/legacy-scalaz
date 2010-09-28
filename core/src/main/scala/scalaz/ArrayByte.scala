@@ -9,3 +9,5 @@ trait ArrayBytes {
     val value = bs
   }
 }
+
+object ArrayByte extends ArrayBytes

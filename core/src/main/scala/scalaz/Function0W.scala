@@ -15,3 +15,5 @@ trait Function0s {
 
   implicit def Function0From[T](f: Function0W[T]): Function0[T] = f.k
 }
+
+object Function0W extends Function0s

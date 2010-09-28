@@ -29,7 +29,7 @@ trait OrderLow {
   }
 }
 
-object Order {
+object Order extends Orders {
   import Scalaz._
   import java.math.BigInteger
 

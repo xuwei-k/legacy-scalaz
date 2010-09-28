@@ -15,6 +15,6 @@ trait Effects {
   }
 }
 
-object Effect {
+object Effect extends Effects {
   implicit def EffectFrom[A](e: Effect[A]): A => Unit = e ! _
 }

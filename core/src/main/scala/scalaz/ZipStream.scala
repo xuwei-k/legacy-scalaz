@@ -13,3 +13,5 @@ trait ZipStreams {
 
   implicit def ZipStreamFrom[A](z: ZipStream[A]): Stream[A] = z.value
 }
+
+object ZipStream extends ZipStreams

@@ -182,3 +182,5 @@ trait Booleans {
 
   implicit def BooleanFrom(b: BooleanW): Boolean = b.isTrue
 }
+
+object BooleanW extends Booleans
