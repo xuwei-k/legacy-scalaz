@@ -5,8 +5,9 @@ trait Cojoin[M[_]] {
 }
 
 object Cojoin {
-  import Scalaz._
-  
+  import Identity._
+  import MA._
+
   implicit def IdentityCojoin: Cojoin[Identity] = new Cojoin[Identity] {
     def cojoin[A](a: Identity[A]) = a
   }
@@ -51,6 +52,7 @@ object Cojoin {
   }
 
   implicit def TreeLocCojoin: Cojoin[TreeLoc] = new Cojoin[TreeLoc] {
+    import TreeLoc.loc
     def cojoin[A](a: TreeLoc[A]): TreeLoc[TreeLoc[A]] = {
       val lft = (_: TreeLoc[A]).left
       val rgt = (_: TreeLoc[A]).right
@@ -70,6 +72,7 @@ object Cojoin {
 
   import concurrent.Promise
   implicit def PromiseCojoin: Cojoin[Promise] = new Cojoin[Promise] {
+    import Promise.promise
     def cojoin[A](a: Promise[A]) = promise(a)(a.strategy)
   }
 }

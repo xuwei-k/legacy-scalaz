@@ -1,8 +1,10 @@
 package scalaz
 
 sealed trait CharW extends PimpedType[Char] {
-  import Scalaz._
-  
+  import Multiplication._
+  import Digit._
+  import Alpha._
+
   def ∏ : CharMultiplication = multiplication(value)
 
   def digit : Option[Digit] = digits find (_.toChar == value)

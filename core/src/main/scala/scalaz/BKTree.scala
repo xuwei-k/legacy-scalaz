@@ -6,7 +6,8 @@ import annotation.tailrec
 // http://hackage.haskell.org/packages/archive/bktrees/0.2.1/doc/html/src/Data-Set-BKTree.html
 
 sealed trait BKTree[+A] {
-  import Scalaz._
+  import Identity._
+  import MA._
 
   def isEmpty : Boolean = this == BKTreeEmpty
 

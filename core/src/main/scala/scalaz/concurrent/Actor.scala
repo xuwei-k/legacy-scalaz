@@ -54,3 +54,5 @@ trait Actors {
 
   implicit def ActorFrom[A](a: Actor[A]): A => Unit = a ! _ 
 }
+
+object Actor extends Actors

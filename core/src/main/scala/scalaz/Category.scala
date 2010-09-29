@@ -18,8 +18,9 @@ trait Category[C[_, _]] {
 }
 
 object Category {
-  import Scalaz._
-  
+  import Identity._
+  import MA._
+
   /** The <b>Set</b> category **/
   implicit val Function1Category: Category[Function1] = new Category[Function1] {
     def id[A] = a => a
@@ -126,6 +127,9 @@ object Category {
 
   /** The Yoneda Lemma */
   def yoneda[Arr[_,_]:Category, X, Y]: Iso[Function1, Alpha[Arr, X, Y], Arr[X, Y]] = {
+    import MAB._
+    import Alpha._
+
     def to(alpha: Alpha[Arr, X, Y]): Arr[X, Y] = alpha(implicitly[Category[Arr]].id)
     def from(f: Arr[X, Y]): Alpha[Arr, X, Y] = new Alpha[Arr, X, Y] {
       def apply[A](a: => Arr[A, X]) = f <<< a
@@ -138,7 +142,7 @@ object Category {
     (On[A1, F]#Apply <~~> A2) => Iso[A1, F[A], F[B]] => Iso[A2, A, B] = 
       (iso => { case Iso(to, from) => Iso(iso.to(to), iso.to(from)) })
 
-  type GeneralAdjunction[P[_,_], Q[_,_], F[_], U[_]] = Biff[P, F, Id]#Apply <~~> Biff[Q, Id, U]#Apply
+  type GeneralAdjunction[P[_,_], Q[_,_], F[_], U[_]] = Biff[P, F, Extras.Id]#Apply <~~> Biff[Q, Extras.Id, U]#Apply
 
   type Adjunction[F[_], U[_]] = GeneralAdjunction[Function1, Function1, F, U]
 
@@ -151,7 +155,9 @@ object Category {
   }
 
   /** The adjunction induced by curry and uncurry being isomorphic */
-  def stateAdjunction[S]: Adjunction[Writer[S]#Apply, Reader[S]#Apply] =
+  def stateAdjunction[S]: Adjunction[Writer[S]#Apply, Reader[S]#Apply] = {
+    import Extras._  
+
     Iso3[~~>, Biff[Function1, Writer[S]#Apply, Id]#Apply, Biff[Function1, Id, Reader[S]#Apply]#Apply](
       new (Biff[Function1, Writer[S]#Apply, Id]#Apply ~~> Biff[Function1, Id, Reader[S]#Apply]#Apply) {
         def apply[A,B](f: => ((S, A)) => B): A => S => B = 
@@ -160,6 +166,7 @@ object Category {
         def apply[A,B](f: => A => S => B): ((S, A)) => B = 
           p => f.apply(p._2)(p._1)
       })
+}
 
   implicit def PartialFunctionCategory: Category[PartialFunction] = new Category[PartialFunction] {
     def id[A] = {case a => a}
@@ -170,11 +177,15 @@ object Category {
   }
 
   implicit def KleisliCategory[M[_]: Monad]: Category[PartialApplyK[Kleisli, M]#Apply] = new Category[PartialApplyK[Kleisli, M]#Apply] {
+    import Kleisli._
+
     def id[A] = ☆(_ η)
     def compose[X, Y, Z](f: Kleisli[M, Y, Z], g: Kleisli[M, X, Y]) = f <=< g
   }
 
   implicit def CokleisliCategory[M[_]: Comonad]: Category[PartialApplyK[Cokleisli, M]#Apply] = new Category[PartialApplyK[Cokleisli, M]#Apply] {
+    import Cokleisli._
+    
     def id[A] = ★(_ ε)
     def compose[X, Y, Z](f: Cokleisli[M, Y, Z], g: Cokleisli[M, X, Y]) = f =<= g 
   }

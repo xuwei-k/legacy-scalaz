@@ -3,7 +3,6 @@ package scalaz
 import collection._
 import collection.generic._
 import scala.collection.mutable.Builder
-import Scalaz._
 
 
 trait CanBuildAnySelf[CC[_]] {

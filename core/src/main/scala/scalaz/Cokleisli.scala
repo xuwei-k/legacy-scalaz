@@ -3,7 +3,8 @@ package scalaz
 trait Cokleisli[W[_], A, B] {
   def apply(a: W[A]): B
 
-  import Scalaz._
+  import MA._
+  import Cokleisli._
 
   def <<=(a: W[A])(implicit w: Comonad[W]): W[B] = a =>> apply
 

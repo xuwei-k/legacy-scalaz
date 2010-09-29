@@ -51,3 +51,5 @@ trait Extras {
     def apply[A](a: => A) = a
   }
 }
+
+object Extras extends Extras

@@ -17,17 +17,20 @@ trait Cofunctor[F[_]] extends InvariantFunctor[F] {
 }
 
 object Cofunctor {
-  import Scalaz._
+  import Identity._
+  import MA._
 
   implicit def Function1Cofunctor[X]: Cofunctor[PartialApply1Of2[Function1, X]#Flip] = new Cofunctor[PartialApply1Of2[Function1, X]#Flip] {
     def comap[A, B](r: A => X, f: B => A) = r compose f
   }
 
   implicit def EqualCofunctor: Cofunctor[Equal] = new Cofunctor[Equal] {
+    import Equal.equal
     def comap[A, B](r: Equal[A], f: B => A) = equal[B]((b1, b2) => r equal (f(b1), f(b2)))
   }
 
   implicit def OrderCofunctor: Cofunctor[Order] = new Cofunctor[Order] {
+    import Order.order
     def comap[A, B](r: Order[A], f: B => A) = order[B]((b1, b2) => r order (f(b1), f(b2)))
   }
 
@@ -36,6 +39,7 @@ object Cofunctor {
   }
 
   implicit def ShowCofunctor: Cofunctor[Show] = new Cofunctor[Show] {
+    import Show.show
     def comap[A, B](r: Show[A], f: B => A) = {
       if(r == null) error("boo")
       show[B](b => r show (f(b)))
@@ -43,16 +47,19 @@ object Cofunctor {
   }
 
   implicit def MetricSpaceCofunctor: Cofunctor[MetricSpace] = new Cofunctor[MetricSpace] {
+    import MetricSpace.metricSpace
     def comap[A, B](r: MetricSpace[A], f: B => A) = metricSpace[B]((b1, b2) => r distance (f(b1), f(b2)))
   }
 
   import concurrent.{Actor, Effect}
 
   implicit def ActorCofunctor: Cofunctor[Actor] = new Cofunctor[Actor] {
+    import Actor.actor
     def comap[A, B](r: Actor[A], f: B => A): Actor[B] = actor[B](r.onError, (b: B) => (r ! f(b))())(r.strategy)
   }
 
   implicit def EffectCofunctor: Cofunctor[Effect] = new Cofunctor[Effect] {
+    import Effect.effect
     def comap[A, B](r: Effect[A], f: B => A) = effect[B]((b) => r ! f(b))(r.strategy)
   }
 

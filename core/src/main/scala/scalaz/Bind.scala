@@ -5,8 +5,9 @@ trait Bind[Z[_]] {
 }
 
 object Bind {
-  import Scalaz._
-  
+  import Identity._
+  import MA._
+
   implicit def IdentityBind: Bind[Identity] = new Bind[Identity] {
     def bind[A, B](a: Identity[A], f: A => Identity[B]) = f(a.value)
   }
@@ -109,10 +110,12 @@ object Bind {
   }
 
   implicit def FirstOptionBind: Bind[FirstOption] = new Bind[FirstOption] {
+    import OptionW._
     def bind[A, B](a: FirstOption[A], f: (A) => FirstOption[B]): FirstOption[B] = (a.value flatMap ((x: A) => f(x).value)).fst
   }
 
   implicit def LastOptionBind: Bind[LastOption] = new Bind[LastOption] {
+    import OptionW._
     def bind[A, B](a: LastOption[A], f: (A) => LastOption[B]): LastOption[B] = (a.value flatMap ((x: A) => f(x).value)).lst
   } 
 
@@ -159,6 +162,7 @@ object Bind {
   }
 
   implicit def TreeBind: Bind[Tree] = new Bind[Tree] {
+    import Tree._
     def bind[A, B](t: Tree[A], f: A => Tree[B]): Tree[B] = {
       val r = f(t.rootLabel)
       node(r.rootLabel, r.subForest.append(t.subForest.map(bind(_, f))))

@@ -3,7 +3,10 @@ package scalaz
 sealed trait BooleanW {
   val isTrue: Boolean
 
-  import Scalaz._
+  import BooleanConjunction._
+  import Identity._
+  import Zero._
+  import Empty._
   
   def |∧| : BooleanConjunction = conjunction(isTrue)
 
@@ -158,20 +161,20 @@ sealed trait BooleanW {
    * Returns the given argument if this is <code>true</code>, otherwise, the zero element for the type of the given
    * argument.
    */
-  def ??[A: Zero](a: => A) = if(isTrue) a else ∅
+  def ??[A: Zero](a: => A): A = if(isTrue) a else ∅[A]
 
-  def !?[A: Zero](a: => A) = if(!isTrue) a else ∅
+  def !?[A: Zero](a: => A): A = if(!isTrue) a else ∅[A]
 
   trait GuardPrevent[M[_]] {
     def apply[A](a: => A)(implicit e: Empty[M], p: Pure[M]): M[A]
   }
 
   def guard[M[_]] = new GuardPrevent[M] {
-    def apply[A](a: => A)(implicit e: Empty[M], p: Pure[M]) = if(isTrue) a η else <∅>
+    def apply[A](a: => A)(implicit e: Empty[M], p: Pure[M]) = if(isTrue) a η else <∅>[M, A]
   }
 
   def prevent[M[_]] = new GuardPrevent[M] {
-    def apply[A](a: => A)(implicit e: Empty[M], p: Pure[M]) = if(isTrue) <∅> else a η
+    def apply[A](a: => A)(implicit e: Empty[M], p: Pure[M]) = if(isTrue) <∅>[M, A] else a η
   }
 }
 

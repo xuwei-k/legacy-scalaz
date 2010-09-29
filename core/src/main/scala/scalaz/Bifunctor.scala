@@ -16,8 +16,6 @@ trait Bifunctor[F[_, _]] {
 }
 
 object Bifunctor {
-  import Scalaz._
-  
   implicit def Tuple2Bifunctor: Bifunctor[Tuple2] = new Bifunctor[Tuple2] {
     def bimap[A, B, C, D](k: (A, B), f: A => C, g: B => D) =
       (f(k._1), g(k._2))
@@ -32,6 +30,7 @@ object Bifunctor {
   }
 
   implicit def ValidationBifunctor: Bifunctor[Validation] = new Bifunctor[Validation] {
+    import Validation._
     def bimap[A, B, C, D](k: Validation[A, B], f: A => C, g: B => D) =
       k match {
         case Failure(a) => failure(f(a))

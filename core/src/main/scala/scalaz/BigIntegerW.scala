@@ -3,7 +3,7 @@ package scalaz
 import java.math.BigInteger
 
 sealed trait BigIntegerW extends PimpedType[BigInteger] {
-  import Scalaz._
+  import Multiplication._
 
   def ∏ = multiplication(value)
 }

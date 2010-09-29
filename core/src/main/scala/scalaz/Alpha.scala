@@ -12,7 +12,7 @@ sealed trait Alpha {
   override def toString: String = toChar.toString
 }
 
-object Alpha {
+object Alpha extends Alphas {
   case object A extends Alpha {
     val toChar = 'a'
   }
