@@ -11,9 +11,12 @@ trait Emptys {
 }
 
 object Empty extends Emptys {
-  import Scalaz._
+  import Identity._
+  import Zero._
 
   implicit def ZipStreamEmpty: Empty[ZipStream] = new Empty[ZipStream] {
+    import ZipStream._
+    
     def empty[A] = emptyZipStream
   }
 
@@ -22,11 +25,11 @@ object Empty extends Emptys {
   }
 
   implicit def EitherLeftEmpty[X: Zero]: Empty[PartialApply1Of2[Either.LeftProjection, X]#Flip] = new Empty[PartialApply1Of2[Either.LeftProjection, X]#Flip] {
-    def empty[A] = Right(∅).left
+    def empty[A] = Right(∅[X]).left
   }
 
   implicit def EitherRightEmpty[X: Zero]: Empty[PartialApply1Of2[Either.RightProjection, X]#Apply] = new Empty[PartialApply1Of2[Either.RightProjection, X]#Apply] {
-    def empty[A] = Left(∅).right
+    def empty[A] = Left(∅[X]).right
   }
   
   implicit def TraversableEmpty[CC[X] <: TraversableLike[X, CC[X]] : CanBuildAnySelf]: Empty[CC] = new Empty[CC] {

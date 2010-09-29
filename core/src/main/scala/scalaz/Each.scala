@@ -5,8 +5,6 @@ trait Each[-E[_]] {
 }
 
 object Each {
-  import Scalaz._
-
   implicit def IdentityEach: Each[Identity] = new Each[Identity] {
     def each[A](e: Identity[A], f: A => Unit) = f(e.value)
   }

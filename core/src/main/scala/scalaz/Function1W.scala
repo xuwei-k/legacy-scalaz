@@ -3,7 +3,10 @@ package scalaz
 sealed trait Function1W[T, R] {
   val k: T => R
 
-  import Scalaz._
+  import Identity._
+  import MA._
+  import BooleanW._
+  import OptionW._
 
   def on[X](f: (R, R) => X, t1: T, t2: T): X = f(k(t1), k(t2))
 

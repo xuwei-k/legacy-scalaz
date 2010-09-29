@@ -1,6 +1,5 @@
 package scalaz
 
-import Scalaz._
 import java.lang.ref.WeakReference
 
 object EphemeralStream {
@@ -81,7 +80,7 @@ object EphemeralStream {
 
 sealed trait EphemeralStream[+A] {
   import EphemeralStream._
-  import Scalaz._
+  import ListW.nil
 
   def isEmpty: Boolean
   def head: () => A
@@ -105,7 +104,7 @@ sealed trait EphemeralStream[+A] {
   }
 
   def filter(p: A => Boolean): EphemeralStream[A] = {
-    var rest = this dropWhile (!p(_))
+    val rest = this dropWhile (!p(_))
     if (rest.isEmpty) empty
     else cons(rest.head(), rest.tail() filter p)
   }

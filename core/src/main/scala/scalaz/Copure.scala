@@ -5,7 +5,7 @@ trait Copure[-C[_]] {
 }
 
 object Copure {
-  import Scalaz._
+  import Identity._
   
   implicit def IdentityCopure: Copure[Identity] = new Copure[Identity] {
     def copure[A](a: Identity[A]) = a

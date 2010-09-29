@@ -1,11 +1,10 @@
 package scalaz
 
 sealed trait DList[A] {
+  import DList._
   def apply(as: List[A]): List[A]
 
   def toList: List[A] = apply(Nil)
-
-  import Scalaz._
 
   def head: Option[A] = toList.headOption
 
@@ -39,4 +38,4 @@ trait DLists {
   def emptyDList[A]: DList[A] = dlist(identity(_: List[A]))
 }
 
-object DLists extends DLists
+object DList extends DLists

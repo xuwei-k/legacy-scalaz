@@ -3,7 +3,7 @@ package scalaz
 sealed trait Function0W[T] {
   val k: () => T
 
-  import Scalaz._
+  import Validation._
 
   def throws: Validation[Throwable, T] = try {success(k())} catch {case e => failure(e)}
 }

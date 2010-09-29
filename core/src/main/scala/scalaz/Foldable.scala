@@ -1,19 +1,20 @@
 package scalaz
 
-import Scalaz._
-
 /**
  * Data structures that can be folded.
  * Minimal complete definition: 'foldMap' or 'foldRight'.
  **/
 trait Foldable[F[_]] {
+  import Identity._
+  import Zero._
+  import Function2W._
 
   /**Combine the elements of a structure using a monoid. **/
   def fold[M: Monoid](t: F[M]): M = foldMap[M, M](t, x => x)
 
   /**Map each element of the structure to a monoid, and combine the results. **/
   def foldMap[A, M: Monoid](t: F[A], f: A => M): M =
-    foldRight[A, M](t, mzero, (x, y) => f(x) |+| y)
+    foldRight[A, M](t, mzero[M], (x, y) => f(x) |+| y)
 
   /**Right-associative fold of a structure. **/
   def foldRight[A, B](t: F[A], z: => B, f: (A, => B) => B): B =
@@ -47,8 +48,6 @@ trait FoldableLow {
 }
 
 object Foldable extends FoldableLow {
-  import Scalaz._
-
   implicit def IdentityFoldable: Foldable[Identity] = new Foldable[Identity] {
     override def foldLeft[A, B](t: Identity[A], b: B, f: (B, A) => B) = f(b, t.value)
 
@@ -124,6 +123,8 @@ object Foldable extends FoldableLow {
   }
 
   implicit def ZipperFoldable: Foldable[Zipper] = new Foldable[Zipper] {
+    import Function2W._
+
     override def foldLeft[A, B](t: Zipper[A], b: B, f: (B, A) => B): B =
       t.lefts.foldRight((t.focus #:: t.rights).foldLeft(b)(f))(f.flip)
 
