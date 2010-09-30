@@ -3,7 +3,8 @@ package scalaz
 sealed trait Kleisli[M[_], A, B] {
   def apply(a: A): M[B]
 
-  import Scalaz._
+  import Kleisli._
+  import MA._
 
   def >=>[C](k: Kleisli[M, B, C])(implicit b: Bind[M]): Kleisli[M, A, C] = ☆((a: A) => b.bind(this(a), k(_: B)))
 

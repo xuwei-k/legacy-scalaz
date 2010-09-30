@@ -5,8 +5,6 @@ trait Length[-L[_]] {
 }
 
 object Length {
-  import Scalaz._
-
   implicit def IdentityLength: Length[Identity] = new Length[Identity] {
     def len[A](a: Identity[A]) = 1
   }
@@ -59,6 +57,8 @@ object Length {
     }
   }
 
+  import collection.mutable.ArraySeq
+
   implicit def ArraySeqLength: Length[ArraySeq] = new Length[ArraySeq] {
     def len[A](a: ArraySeq[A]) = a.length
   }
@@ -71,7 +71,7 @@ object Length {
     def len[A](a: ImmutableArray[A]) = a.length
   }
 
-  import FingerTree.ftip2ft
+  import FingerTree._
   implicit def RopeLength: Length[Rope] = new Length[Rope] {
     def len[A](a: Rope[A]) = a.value.measure
   }

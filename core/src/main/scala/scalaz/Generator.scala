@@ -1,7 +1,5 @@
 package scalaz
 
-import Scalaz._
-
 /** A Generator[C] is a container of elements, and which knows how to efficiently apply a Reducer to extract an answer by combining elements. A Reducer may supply efficient left-to-right and right-to-left reduction strategies that a Generator may avail itself of. **/
 abstract class Generator[C[_]] {
   def reduce[E, M](r: Reducer[E, M], c: C[E]): M = to(r, r.monoid.zero, c)
@@ -10,6 +8,8 @@ abstract class Generator[C[_]] {
 }
 
 object Generator {
+  import MA._
+  
   def FoldrGenerator[F[_]: Foldable] = new Generator[F] {
     override def reduce[E, M](r: Reducer[E, M], c: F[E]): M =
       c.foldr(r.monoid.zero)((a, b) => r.cons(a, b))

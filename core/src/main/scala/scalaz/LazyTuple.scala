@@ -39,3 +39,5 @@ trait LazyTuples {
     def _4 = d
   }
 }
+
+object LazyTuples extends LazyTuples

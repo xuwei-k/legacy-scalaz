@@ -1,7 +1,7 @@
 package scalaz
 
 sealed trait IntW extends PimpedType[Int] {
-  import Scalaz._
+  import Multiplication._
 
   def ∏ : IntMultiplication = multiplication(value)
 

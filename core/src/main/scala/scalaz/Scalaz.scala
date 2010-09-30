@@ -47,8 +47,8 @@ object Scalaz extends ScalazLow
     with    Promises
     with    Reducers
     with    Semigroups 
-    with    FingerTree.IndSeqs
-    with    FingerTree.Ropes
+    with    IndSeqs
+    with    Ropes
     with    Shorts
     with    Shows
     with    States

@@ -1,13 +1,13 @@
 package scalaz
 
-import scalaz._
-import Scalaz._
-
 trait InvariantFunctor[F[_]] {
   def xmap[A, B](ma: F[A], f: A => B, g: B => A): F[B]
 }
 
 object InvariantFunctor {
+  import Identity._
+  import MA._
+  
   implicit val MonoidInvariantFunctor: InvariantFunctor[Monoid] = new InvariantFunctor[Monoid] {
     def xmap[A, B](ma: Monoid[A], f: A => B, g: B => A): Monoid[B] = new Monoid[B] {
       def append(b1: B, b2: => B) = f(ma append (g(b1), g(b2)))
@@ -31,6 +31,8 @@ object InvariantFunctor {
   }
 
   implicit def MemoInvariantFunctor[V]: InvariantFunctor[PartialApply1Of2[Memo, V]#Flip] = new InvariantFunctor[PartialApply1Of2[Memo, V]#Flip] {
+    import Memo._
+    
     def xmap[A, B](ma: Memo[A, V], f: A => B, g: B => A): Memo[B, V] = {
       memo {
         (h: B => V) =>

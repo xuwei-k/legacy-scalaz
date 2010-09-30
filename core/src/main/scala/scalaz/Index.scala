@@ -5,7 +5,7 @@ trait Index[-I[_]] {
 }
 
 object Index {
-  import Scalaz._
+  import Identity._
   
   implicit def IdentityIndex: Index[Identity] = new Index[Identity] {
     def index[A](a: Identity[A], i: Int) = if(i == 0) Some(a.value) else None
@@ -30,6 +30,8 @@ object Index {
   implicit def OptionIndex: Index[Option] = new Index[Option] {
     def index[A](a: Option[A], i: Int) = a filter (_ => i == 0)
   }
+
+  import collection.mutable.ArraySeq
 
   implicit def ArraySeqIndex: Index[ArraySeq] = new Index[ArraySeq] {
     def index[A](a: ArraySeq[A], i: Int) = if(i >= 0 && i < a.length) Some(a(i)) else None

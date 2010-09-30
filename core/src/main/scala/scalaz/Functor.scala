@@ -18,7 +18,8 @@ trait Functor[F[_]] extends InvariantFunctor[F] {
 }
 
 object Functor {
-  import Scalaz._
+  import Identity._
+  import MA._
 
   implicit def IdentityFunctor: Functor[Identity] = new Functor[Identity] {
     def fmap[A, B](r: Identity[A], f: A => B) = f(r.value)
@@ -44,6 +45,8 @@ object Functor {
   }
 
   implicit def ZipStreamFunctor: Functor[ZipStream] = new Functor[ZipStream] {
+    import StreamW._
+
     def fmap[A, B](r: ZipStream[A], f: A => B) = r.value map f ʐ
   }
 
@@ -110,10 +113,14 @@ object Functor {
   }
 
   implicit def FirstOptionFunctor: Functor[FirstOption] = new Functor[FirstOption] {
+    import OptionW._
+
     def fmap[A, B](r: FirstOption[A], f: A => B) = (r.value map f).fst
   }
 
   implicit def LastOptionFunctor: Functor[LastOption] = new Functor[LastOption] {
+    import OptionW._
+    
     def fmap[A, B](r: LastOption[A], f: A => B) = (r.value map f).lst
   }
 
@@ -140,6 +147,8 @@ object Functor {
   }
 
   implicit def KleisliFunctor[M[_], P](implicit ff: Functor[M]): Functor[PartialApplyKA[Kleisli, M, P]#Apply] = new Functor[PartialApplyKA[Kleisli, M, P]#Apply] {
+    import Kleisli._
+
     def fmap[A, B](k: Kleisli[M, P, A], f: A => B): Kleisli[M, P, B] = ☆((p: P) => ff.fmap(k(p), f))
   }
 
@@ -173,14 +182,20 @@ object Functor {
   }
 
   implicit def ZipperFunctor: Functor[Zipper] = new Functor[Zipper] {
+    import Zipper._
+
     def fmap[A, B](z: Zipper[A], f: A => B) = zipper(z.lefts map f, f(z.focus), z.rights map f)
   }
 
   implicit def TreeFunctor: Functor[Tree] = new Functor[Tree] {
+    import Tree._
+    
     def fmap[A, B](t: Tree[A], f: A => B): Tree[B] = node(f(t.rootLabel), t.subForest.map(fmap(_: Tree[A], f)))
   }
 
   implicit def TreeLocFunctor: Functor[TreeLoc] = new Functor[TreeLoc] {
+    import TreeLoc._
+
     def fmap[A, B](t: TreeLoc[A], f: A => B): TreeLoc[B] = {
       val ff = (_: Tree[A]).map(f)
       loc(t.tree map f, t.lefts map ff, t.rights map ff,
@@ -202,6 +217,8 @@ object Functor {
 
   import scalaz.concurrent.Promise
   implicit def PromiseFunctor: Functor[Promise] = new Functor[Promise] {
+    import Promise._
+    
     def fmap[A, B](t: Promise[A], f: A => B): Promise[B] = {
       t.bind(a => promise(f(a))(t.strategy))
     }
@@ -211,8 +228,10 @@ object Functor {
   // http://lampsvn.epfl.ch/trac/scala/ticket/2782
   /*implicit*/
   def JavaCollectionFunctor[S[X] <: java.util.Collection[X] : Empty]: Functor[S] = new Functor[S] {
+    import Empty._
+
     def fmap[A, B](r: S[A], f: A => B) = {
-      val a: S[B] = <∅>
+      val a: S[B] = <∅>[S, B]
       val i = r.iterator
       while (i.hasNext)
         a.add(f(i.next))

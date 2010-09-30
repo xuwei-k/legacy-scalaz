@@ -9,7 +9,8 @@ sealed trait Function2W[T1, T2, R] {
 
   import concurrent.Strategy
   import concurrent.Promise
-  import Scalaz._
+  import Identity._
+  import MA._
 
   def promise(implicit s: Strategy): (T1, T2) => Promise[R] = (x: T1, y: T2) => x.pure[Promise].<**>(y.pure[Promise])(k)
 

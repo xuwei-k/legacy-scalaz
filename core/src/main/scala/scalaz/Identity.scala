@@ -3,7 +3,15 @@ package scalaz
 import annotation.tailrec
 
 sealed trait Identity[A] extends PimpedType[A] {
-  import Scalaz._
+  import Identity._
+  import MA._
+  import Dual._
+  import Show._
+  import Zero._
+  import StreamW._
+  import Validation._
+  import OptionW._
+  import LazyTuples._
 
   def η[F[_]](implicit p: Pure[F]): F[A] = p pure value
 
@@ -113,7 +121,7 @@ sealed trait Identity[A] extends PimpedType[A] {
     @tailrec
     def replicate0(accum: M[A], n: Int): M[A] = if (n > 0) replicate0(accum ⊹ value.η, n - 1) else accum
 
-    replicate0(∅, n)
+    replicate0(∅[M[A]], n)
   }
 
   def repeat[M[_]](implicit p: Pure[M], m: Monoid[M[A]]): M[A] = value.η ⊹ repeat

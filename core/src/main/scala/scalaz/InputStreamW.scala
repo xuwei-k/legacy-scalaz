@@ -3,7 +3,7 @@ package scalaz
 import java.io.InputStream
 
 sealed trait InputStreamW extends PimpedType[InputStream] {
-  import Scalaz._
+  import InputStreamW._
 
   implicit def elements: Iterator[Byte] =
     new Iterator[Byte] {
