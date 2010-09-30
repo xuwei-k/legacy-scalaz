@@ -14,7 +14,11 @@ sealed trait Zipper[+A] {
   val lefts: Stream[A]
   val rights: Stream[A]
 
-  import Scalaz._
+  import Zipper._
+  import OptionW._
+  import MA._
+  import StreamW._
+  import Identity._
 
   /**
    * Get the Stream representation of this Zipper. This fully traverses `lefts`. `rights` is

@@ -1,6 +1,5 @@
 package scalaz
 
-import Scalaz._
 /**
  * A Reducer[C,M] is a Monoid[M] that maps
  * values of type C through `unit` to values of type M. A C-Reducer may also
@@ -14,8 +13,11 @@ import Scalaz._
  * Based on a Haskell library by Edward Kmett
  **/
 abstract class Reducer[C, M](implicit mm: Monoid[M]) {
+  import Identity._
+  import Zero._
+
   val monoid = mm
-  def unit(c: C): M = snoc(mzero, c)
+  def unit(c: C): M = snoc(mzero[M], c)
   def snoc(m: M, c: C): M = m |+| unit(c)
   def cons(c: C, m: M): M = unit(c) |+| m
 
@@ -30,7 +32,10 @@ abstract class Reducer[C, M](implicit mm: Monoid[M]) {
 }
 
 trait Reducers {
-  import Scalaz._
+  import BooleanConjunction._
+  import Multiplication._
+  import Identity._
+  
   implicit def ReducerMonoid[C, M](r: Reducer[C, M]) = r.monoid
 
   /** Construct a Reducer with the given unit function and monoid **/

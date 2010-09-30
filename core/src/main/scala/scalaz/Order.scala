@@ -7,7 +7,7 @@ trait Order[-A] extends Equal[A] {
 }
 
 trait Orders {
-  import Scalaz._
+  import MA._
 
   def order[A](f: (A, A) => Ordering): Order[A] = new Order[A] {
     def order(a1: A, a2: A) = f(a1, a2)
@@ -17,21 +17,11 @@ trait Orders {
 
 }
 
-trait OrderLow {
-  import Scalaz._
-
-  implicit def ScalaOrderingOrder[T: scala.Ordering]: Order[T] = order {(t1, t2) =>
-    implicitly[scala.Ordering[T]].compare(t1, t2) match {
-      case -1 => LT
-      case 0 => EQ
-      case 1 => GT
-    }
-  }
-}
-
 object Order extends Orders {
-  import Scalaz._
+  import Identity._
+  import MA._
   import java.math.BigInteger
+  import IntW._
 
   implicit def DigitOrder: Order[Digit] = orderBy(_.toInt)
 

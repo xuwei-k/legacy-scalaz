@@ -8,7 +8,9 @@ sealed trait Tree[+A] {
 
   def subForest: Stream[Tree[A]]
 
-  import Scalaz._
+  import Identity._
+  import MA._
+  import StreamW._
 
   def foldMap[B: Monoid](f: A => B): B =
     f(rootLabel) ⊹ subForest.foldMap((_: Tree[A]).foldMap(f))

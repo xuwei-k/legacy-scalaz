@@ -1,8 +1,11 @@
 package scalaz
 
-import Scalaz._
-
 sealed trait TreeLoc[+A] {
+  import TreeLoc._
+  import Tree._
+  import MA._
+  import OptionW._
+  
   val tree: Tree[A]
   val lefts: Stream[Tree[A]]
   val rights: Stream[Tree[A]]

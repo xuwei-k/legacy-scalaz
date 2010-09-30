@@ -16,7 +16,10 @@ sealed trait StringW extends PimpedType[String] {
                        else s + "s"
 
   import xml._
-  import Scalaz._
+  import Identity._
+  import ListW._
+  import InputStreamW._
+  import Validation._
 
   /**
    * Construct an XML node based on the given option value. If there is no value available, then an empty text node is returned,

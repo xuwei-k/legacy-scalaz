@@ -3,7 +3,7 @@ package scalaz
 sealed trait ShortW extends PimpedType[Short] {
   val value: Short
 
-  import Scalaz._
+  import Multiplication._
 
   def ∏ : ShortMultiplication = multiplication(value)
 }

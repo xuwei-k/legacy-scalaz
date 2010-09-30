@@ -4,7 +4,10 @@ sealed trait NonEmptyList[+A] {
   val head: A
   val tail: List[A]
 
-  import Scalaz._
+  import Identity._
+  import NonEmptyList._
+  import Zipper._
+  import ListW._
 
   def <::[B >: A](b: B): NonEmptyList[B] = nel(b, head :: tail)
 

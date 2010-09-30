@@ -1,10 +1,10 @@
 package scalaz
 
 sealed trait State[S, +A] {
+  import State._
+  
   def apply(s: S): (S, A)
 
-  import Scalaz._
-  
   def map[B](f: A => B): State[S, B] = state(apply(_) match {
     case (s, a) => (s, f(a))
   })
@@ -24,9 +24,12 @@ sealed trait State[S, +A] {
  * State monad transformer
  **/
 sealed trait StateT[M[_], S, A] {
+  import State._
+  
   def apply(s: S): M[(S, A)]
 
-  import Scalaz._
+  import MA._
+  import MAB._
 
   def !(s: S)(implicit m: Functor[M]): M[A] = apply(s) map (_._2)
   def ~>(s: S)(implicit m: Functor[M]): M[S] = apply(s) map (_._1)

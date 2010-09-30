@@ -14,13 +14,15 @@ trait PlusLow {
 }
 
 object Plus extends PlusLow {
-  import Scalaz._
+  import Identity._
 
   implicit def NonEmptyListPlus: Plus[NonEmptyList] = new Plus[NonEmptyList] {
     def plus[A](a1: NonEmptyList[A], a2: => NonEmptyList[A]) = a1.list <::: a2
   }
 
   implicit def ZipStreamPlus: Plus[ZipStream] = new Plus[ZipStream] {
+    import StreamW._
+    
     def plus[A](a1: ZipStream[A], a2: => ZipStream[A]) = a1.value append a2.value ʐ
   }
 

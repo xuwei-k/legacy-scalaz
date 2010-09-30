@@ -2,8 +2,14 @@ package scalaz
 
 
 sealed trait ListW[A] extends PimpedType[List[A]] {
-  import Scalaz._
   import annotation.tailrec
+  import ListW._
+  import StreamW._
+  import Zero._
+  import BooleanW._
+  import Identity._
+  import MA._
+  import MAB._
 
   def intersperse(a: A): List[A] = {
     @tailrec
@@ -38,7 +44,7 @@ sealed trait ListW[A] extends PimpedType[List[A]] {
     value.toStream.zipperEnd
 
   def <^>[B: Zero](f: NonEmptyList[A] => B): B = value match {
-    case Nil => ∅
+    case Nil => ∅[B]
     case h :: t => f(Scalaz.nel(h, t))
   }
 
@@ -50,8 +56,8 @@ sealed trait ListW[A] extends PimpedType[List[A]] {
   def dlist: DList[A] = Scalaz.dlist(value ::: (_: List[A]))
 
   def takeWhileM[M[_] : Monad](p: A => M[Boolean]): M[List[A]] = value match {
-    case Nil => nil[A] η
-    case h :: t => p(h) ∗ (if (_) (t takeWhileM p) ∘ (h :: _) else nil[A] η)
+    case Nil => nil[A].η[M]
+    case h :: t => p(h) ∗ (if (_) (t takeWhileM p) ∘ (h :: _) else nil[A].η[M])
   }
 
   def takeUntilM[M[_] : Monad](p: A => M[Boolean]): M[List[A]] =

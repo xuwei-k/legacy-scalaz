@@ -3,19 +3,21 @@ package scalaz
 trait Traverse[T[_]] extends Functor[T] {
   def traverse[F[_] : Applicative, A, B](f: A => F[B], t: T[A]): F[T[B]]
 
-  import Scalaz._
-
   override def fmap[A, B](k: T[A], f: A => B) = traverse[Identity, A, B](f(_), k)
 }
 
 object Traverse {
-  import Scalaz._
+  import Identity._
+  import MA._
+  import ListW._
 
   implicit def IdentityTraverse: Traverse[Identity] = new Traverse[Identity] {
     def traverse[F[_] : Applicative, A, B](f: A => F[B], t: Identity[A]) = f(t.value) ∘ (b => (b: B))
   }
 
   implicit def NonEmptyListTraverse: Traverse[NonEmptyList] = new Traverse[NonEmptyList] {
+    import NonEmptyList._
+
     def traverse[F[_] : Applicative, A, B](f: A => F[B], as: NonEmptyList[A]) = (as.list ↦ f) ∘ ((x: List[B]) => nel(x.head, x.tail))
   }
 
@@ -44,6 +46,8 @@ object Traverse {
   }
 
   implicit def OptionTraverse: Traverse[Option] = new Traverse[Option] {
+    import OptionW._
+
     def traverse[F[_] : Applicative, A, B](f: A => F[B], ta: Option[A]): F[Option[B]] =
       ta match {
         case None => (none[B]) η
@@ -54,11 +58,16 @@ object Traverse {
   import concurrent.Promise
 
   implicit def PromiseTraverse: Traverse[Promise] = new Traverse[Promise] {
+    import concurrent.Promise._
+
     def traverse[F[_] : Applicative, A, B](f: A => F[B], ta: Promise[A]): F[Promise[B]] =
       f(ta.get) ∘ (promise(_: B)(ta.strategy))
   }
 
   implicit def ZipperTraverse: Traverse[Zipper] = new Traverse[Zipper] {
+    import Zipper._
+    import StreamW._
+
     def traverse[F[_] : Applicative, A, B](f: A => F[B], za: Zipper[A]): F[Zipper[B]] = {
       val z = (zipper(_: Stream[B], _: B, _: Stream[B])).curried
       val a = implicitly[Applicative[F]]
@@ -68,11 +77,15 @@ object Traverse {
   }
 
   implicit def ZipStreamTraverse: Traverse[ZipStream] = new Traverse[ZipStream] {
+    import StreamW._
+
     def traverse[F[_] : Applicative, A, B](f: A => F[B], za: ZipStream[A]): F[ZipStream[B]] =
       TraversableTraverse[Stream].traverse[F, A, B](f, za.value) ∘ ((_: Stream[B]) ʐ)
   }
 
   implicit def TreeTraverse: Traverse[Tree] = new Traverse[Tree] {
+    import Tree._
+
     def traverse[F[_] : Applicative, A, B](f: A => F[B], ta: Tree[A]): F[Tree[B]] = {
       val trav = (t: Tree[A]) => traverse[F, A, B](f, t)
       val cons = (x: B) => (xs: Stream[Tree[B]]) => node(x, xs)

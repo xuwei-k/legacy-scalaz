@@ -1,7 +1,9 @@
 package scalaz
 
 sealed trait OptionW[A] extends PimpedType[Option[A]] {
-  import Scalaz._
+  import Identity._
+  import OptionW._
+  import Empty._
 
   /**
    * Catamorphism over the option. Returns the provided function `some` applied to item contained in the Option
@@ -99,7 +101,7 @@ sealed trait OptionW[A] extends PimpedType[Option[A]] {
    */
   def orEmpty[M[_] : Pure : Empty]: M[A] = value match {
     case Some(a) => a η
-    case None => <∅>
+    case None => <∅>[M, A]
   }
 }
 

@@ -5,7 +5,7 @@ trait Show[A] {
 }
 
 trait Shows {
-  import Scalaz._
+  import MA._
   def show[A](f: A => List[Char]): Show[A] = new Show[A] {
     def show(a: A) = f(a)
   }
@@ -18,7 +18,10 @@ trait Shows {
 }
 
 object Show extends Shows {
-  import Scalaz._
+  import Identity._
+  import MA._
+  import MAB._
+  
   import Predef.{implicitly => i}
 
   implicit def DigitShow: Show[Digit] = showBy(_.toInt)

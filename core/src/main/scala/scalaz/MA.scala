@@ -1,7 +1,16 @@
 package scalaz
 
 sealed trait MA[M[_], A] extends PimpedType[M[A]] {
-  import Scalaz._
+  import Identity._
+  import MA._
+  import CharW._
+  import ListW._
+  import OptionW._
+  import Memo._
+  import Zero._
+  import Kleisli._
+  import Cokleisli._
+  import Function1W._
 
   def ∘[B](f: A => B)(implicit t: Functor[M]): M[B] = t.fmap(value, f)
 
@@ -244,8 +253,10 @@ sealed trait MA[M[_], A] extends PimpedType[M[A]] {
   def zipWithA[F[_], B, C](b: M[B])(f: (A, B) => F[C])(implicit a: Applicative[M], t: Traverse[M], z: Applicative[F]): F[M[C]] =
     (b <*> (a.fmap(value, f.curried))).sequence[F, C]
 
-  def bktree(implicit f: Foldable[M], m: MetricSpace[A]) =
+  def bktree(implicit f: Foldable[M], m: MetricSpace[A]) = {
+    import BKTree._
     foldl(emptyBKTree[A])(_ + _)
+  }
 
   def fpair(implicit f: Functor[M]): M[(A, A)] = ∘(_.pair)
 
@@ -263,8 +274,10 @@ sealed trait MA[M[_], A] extends PimpedType[M[A]] {
   def parBind[B](f: A => M[B])(implicit m: Monad[M], s: Strategy, t: Traverse[M]): Promise[M[B]] =
     parMap(f).map(((_: MA[M, M[B]]) μ) compose (ma(_)))
 
-  def parZipWith[B, C](bs: M[B])(f: (A, B) => C)(implicit z: Applicative[M], s: Strategy, t: Traverse[M]): Promise[M[C]] =
+  def parZipWith[B, C](bs: M[B])(f: (A, B) => C)(implicit z: Applicative[M], s: Strategy, t: Traverse[M]): Promise[M[C]] = {
+    import concurrent.Promise._
     zipWithA(bs)((x, y) => promise(f(x, y)))
+  }
 
 }
 
@@ -300,7 +313,7 @@ trait MAsLow {
 class MACompanionLow extends MAsLow
 
 object MA extends MACompanionLow with MAs {
-  implicit def EitherLeftMA[X, A](a: Either.LeftProjection[A, X]) = ma[PartialApply1Of2[Either.LeftProjection, X]#Flip, A](a)
+  implicit def EitherLeftMA[X, A](a: Either.LeftProjection[A, X]): MA[PartialApply1Of2[Either.LeftProjection, X]#Flip, A] = ma[PartialApply1Of2[Either.LeftProjection, X]#Flip, A](a)
 
   implicit def EitherRightMA[X, A](a: Either.RightProjection[X, A]): MA[PartialApply1Of2[Either.RightProjection, X]#Apply, A] = ma[PartialApply1Of2[Either.RightProjection, X]#Apply, A](a)
 

@@ -1,7 +1,8 @@
 package scalaz
 
 sealed trait LongW extends PimpedType[Long] {
-  import Scalaz._
+  import Multiplication._
+  import LongW._
 
   def ∏ : LongMultiplication = multiplication(value)
 

@@ -32,7 +32,20 @@ trait SemigroupLow {
 }
 
 object Semigroup extends SemigroupLow with Semigroups {
-  import Scalaz._
+  import Identity._
+  import BooleanW._
+  import Byte._
+  import CharW._
+  import ShortW._
+  import IntW._
+  import LongW._
+  import BigIntW._
+  import BigIntegerW._
+  import StreamW._
+  import Multiplication._
+
+  import collection.mutable.ArraySeq
+  
   import xml.NodeSeq
 
   implicit def DigitSemigroup: Semigroup[Digit] = semigroup((a, b) => a.toInt + b.toInt)
@@ -61,7 +74,7 @@ object Semigroup extends SemigroupLow with Semigroups {
 
   implicit def ByteSemigroup: Semigroup[Byte] = semigroup((a, b) => (a + b).toByte)
 
-  implicit def ByteMultiplicationSemigroup: Semigroup[ByteMultiplication] = semigroup((a, b) => (a * b).toByte ∏)
+  implicit def ByteMultiplicationSemigroup: Semigroup[ByteMultiplication] = semigroup((a, b) => multiplication((a * b).toByte))
 
   implicit def LongSemigroup: Semigroup[Long] = semigroup((a, b) => (a + b).toLong)
 
@@ -126,7 +139,11 @@ object Semigroup extends SemigroupLow with Semigroups {
   implicit def DualSemigroup[A: Semigroup]: Semigroup[Dual[A]] =
     semigroup((x, y) => y.value ⊹ x.value)
 
-  implicit def SemigroupKleisliSemigroup[M[_],A,B](implicit ss: Semigroup[M[B]]): Semigroup[Kleisli[M,A,B]] = semigroup((k1, k2) => ☆((a : A) => k1(a) ⊹ k2.apply(a)))
+  implicit def SemigroupKleisliSemigroup[M[_],A,B](implicit ss: Semigroup[M[B]]): Semigroup[Kleisli[M,A,B]] = {
+    import Kleisli._
+    
+    semigroup((k1, k2) => ☆((a : A) => k1(a) ⊹ k2.apply(a)))
+  }
 
   import concurrent.Strategy
   

@@ -1,7 +1,7 @@
 package scalaz
 
 sealed trait Validation[+E, +A] {
-  import Scalaz._
+  import Identity._
 
   def fold[X](failure: E => X = identity[E] _, success: A => X = identity[A] _): X = this match {
     case Success(x) => success(x)
@@ -70,7 +70,7 @@ final case class Failure[E, A](e: E) extends Validation[E, A]
 sealed trait FailProjection[+E, +A] {
   val validation: Validation[E, A]
 
-  import Scalaz._
+  import Identity._
 
   def toOption: Option[E] = validation match {
     case Success(_) => None

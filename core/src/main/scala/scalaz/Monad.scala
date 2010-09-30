@@ -24,7 +24,8 @@ object Monad {
 
   import Bind._
   import Pure._
-  import Scalaz._
+  import Identity._
+  import MA._
 
   implicit def StateMonad[A] = monad[PartialApply1Of2[State, A]#Apply](StateBind, StatePure)
 

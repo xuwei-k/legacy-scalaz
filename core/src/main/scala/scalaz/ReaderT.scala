@@ -1,12 +1,11 @@
 package scalaz
 
-import Scalaz._
-
 // Reader monad transformer
 // Can be used to add environment reading capabilities to other monads
 case class ReaderT[M[_], R, A](value: R => M[A]) extends NewType[R => M[A]]
 
 object ReaderT {
+  import MA._
 
   implicit def readerTPure[M[_], R](implicit m: Pure[M]) =
     new Pure[PartialApplyKA[ReaderT, M, R]#Apply] {

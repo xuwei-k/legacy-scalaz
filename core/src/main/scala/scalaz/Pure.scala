@@ -8,14 +8,15 @@ trait Pure[P[_]] {
 }
 
 object Pure {
-  import Scalaz._
+  import Identity._
+  import Zero._
 
   implicit def IdentityPure: Pure[Identity] = new Pure[Identity] {
     def pure[A](a: => A) = a
   }
 
   implicit def ConstPure[B: Monoid] = new Pure[PartialApply1Of2[Const, B]#Apply] {
-    def pure[A](a: => A) = Const[B, A](∅)
+    def pure[A](a: => A) = Const[B, A](∅[B])
   }
 
   implicit def NonEmptyListPure: Pure[NonEmptyList] = new Pure[NonEmptyList] {
@@ -36,6 +37,8 @@ object Pure {
 
   implicit def StateTPure[S, M[_]: Pure]: Pure[PartialApplyKA[StateT, M, S]#Apply] =
     new Pure[PartialApplyKA[StateT, M, S]#Apply] {
+      import State._
+
       def pure[A](a: => A) = stateT(s => ((s, a)).pure[M])
     }
 
@@ -44,7 +47,7 @@ object Pure {
   }
 
   implicit def Tuple2Pure[R: Zero]: Pure[PartialApply1Of2[Tuple2, R]#Apply] = new Pure[PartialApply1Of2[Tuple2, R]#Apply] {
-    def pure[A](a: => A) = (∅, a)
+    def pure[A](a: => A) = (∅[R], a)
   }
 
   implicit def Tuple3Pure[R: Zero, S: Zero]: Pure[PartialApply2Of3[Tuple3, R, S]#Apply] = new Pure[PartialApply2Of3[Tuple3, R, S]#Apply] {
@@ -102,10 +105,14 @@ object Pure {
   }
 
   implicit def FirstOptionPure: Pure[FirstOption] = new Pure[FirstOption] {
+    import OptionW._
+
     def pure[A](a: => A) = Some(a).fst
   }
   
   implicit def LastOptionPure: Pure[LastOption] = new Pure[LastOption] {
+    import OptionW._
+
     def pure[A](a: => A) = Some(a).lst
   }
 
@@ -135,7 +142,7 @@ object Pure {
   import java.util.AbstractMap.SimpleImmutableEntry
 
   implicit def MapEntryPure[X: Zero]: Pure[PartialApply1Of2[Entry, X]#Apply] = new Pure[PartialApply1Of2[Entry, X]#Apply] {
-    def pure[A](a: => A) = new SimpleImmutableEntry(∅, a)
+    def pure[A](a: => A) = new SimpleImmutableEntry(∅[X], a)
   }
 
   implicit def ValidationPure[X]: Pure[PartialApply1Of2[Validation, X]#Apply] = new Pure[PartialApply1Of2[Validation, X]#Apply] {
@@ -156,14 +163,20 @@ object Pure {
   }
 
   implicit def ZipStreamPure: Pure[ZipStream] = new Pure[ZipStream] {
+    import ZipStream._
+
     def pure[A](a: => A) = zip(Stream(a))
   }
 
   implicit def EndoPure: Pure[Endo] = new Pure[Endo] {
+    import Endo._
+    
     def pure[A](a: => A) = constantEndo(a)
   }
 
   implicit def TreePure: Pure[Tree] = new Pure[Tree] {
+    import Tree._
+
     def pure[A](a: => A) = leaf(a)
   }
 
@@ -173,6 +186,8 @@ object Pure {
 
   import concurrent._
   implicit def PromisePure(implicit s: Strategy): Pure[Promise] = new Pure[Promise] {
+    import Promise._
+
     def pure[A](a: => A) = promise(a)
   }
 

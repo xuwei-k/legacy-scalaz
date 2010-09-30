@@ -16,7 +16,7 @@ trait MetricSpaces {
     def distance(a1: A, a2: A) = f(a1, a2)
   }
 
-  import Scalaz._
+  import MA._
 
   def levenshtein[M[_], A](implicit l: Length[M], i: Index[M], e: Equal[A]): MetricSpace[M[A]] = metricSpace[M[A]](_ <---> _)
 

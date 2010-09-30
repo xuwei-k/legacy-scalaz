@@ -1,7 +1,11 @@
 package scalaz
 
 sealed trait StreamW[A] extends PimpedType[Stream[A]] {
-  import Scalaz._
+  import StreamW._
+  import ZipStream._
+  import Zipper._
+  import MA._
+  import Identity._
 
   def ʐ: ZipStream[A] = zip(value)
 

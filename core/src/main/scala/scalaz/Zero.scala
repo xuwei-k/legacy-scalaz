@@ -35,7 +35,18 @@ trait Zeros {
 }
 
 object Zero extends Zeros {
-  import Scalaz._
+  import Identity._
+  import BooleanW._
+  import Byte._
+  import CharW._
+  import ShortW._
+  import IntW._
+  import LongW._
+  import BigIntW._
+  import BigIntegerW._
+  import StreamW._
+  import Multiplication._
+
   import xml.{Elem, Node, NodeSeq}
 
   implicit def DigitZero: Zero[Digit] = zero(Digit._0)
@@ -60,7 +71,7 @@ object Zero extends Zeros {
 
   implicit def ByteZero: Zero[Byte] = zero(0.toByte)
 
-  implicit def ByteMultiplicationZero: Zero[ByteMultiplication] = zero(1.toByte ∏)
+  implicit def ByteMultiplicationZero: Zero[ByteMultiplication] = zero(multiplication(1.toByte))
 
   implicit def LongZero: Zero[Long] = zero(0L)
 
@@ -101,7 +112,11 @@ object Zero extends Zeros {
     val zero = new Elem(null, null, scala.xml.Null, xml.TopScope, Nil: _*)
   }
 
-  implicit def ZipStreamZero[A]: Zero[ZipStream[A]] = zero(zip(Stream.Empty))
+  implicit def ZipStreamZero[A]: Zero[ZipStream[A]] = {
+    import ZipStream._
+
+    zero(zip(Stream.Empty))
+  }
 
   implicit def OptionZero[A]: Zero[Option[A]] = zero(None)
 
@@ -134,7 +149,11 @@ object Zero extends Zeros {
     zero(FingerTree.empty)
   }
 
-  implicit def ZeroKleisliZero[M[_], A, B](implicit z: Zero[M[B]]): Zero[Kleisli[M, A, B]] = zero(☆((_: A) => ∅[M[B]]))
+  implicit def ZeroKleisliZero[M[_], A, B](implicit z: Zero[M[B]]): Zero[Kleisli[M, A, B]] = {
+    import Kleisli._
+    
+    zero(☆((_: A) => ∅[M[B]]))
+  }
 
   import concurrent.Strategy
   import concurrent.Strategy.Id
