@@ -45,6 +45,7 @@ abstract class ScalazDefaults(info: ProjectInfo) extends DefaultProject(info) wi
 final class ScalazProject(info: ProjectInfo) extends ParentProject(info) with OverridableVersion {
   // Sub-projects
   lazy val core = project("core", "scalaz-core", new Core(_))
+  lazy val io = project("io", "scalaz-io", new Io(_), core)
   lazy val geo = project("geo", "scalaz-geo", new Geo(_), core)
   lazy val http = project("http", "scalaz-http", new Http(_), core)
   lazy val example = project("example", "scalaz-example", new Example(_), core, geo, http)
@@ -99,6 +100,10 @@ final class ScalazProject(info: ProjectInfo) extends ParentProject(info) with Ov
     val servlet = "javax.servlet" % "servlet-api" % "2.5" withSources
 
     override def documentOptions = documentTitle("Scalaz HTTP") :: super.documentOptions
+  }
+
+  class Io(info : ProjectInfo) extends ScalazDefaults(info) {
+    override def documentOptions = documentTitle("Scalaz IO") :: super.documentOptions
   }
 
   class Geo(info: ProjectInfo) extends ScalazDefaults(info) {
