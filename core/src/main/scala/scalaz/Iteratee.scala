@@ -2,207 +2,249 @@ package scalaz
 
 import Scalaz._
 
-/** The input to an iteratee. **/
-sealed trait Input[E] {
-  def apply[Z](empty: => Z, el: (=> E) => Z, eof: => Z): Z
+/**The input to an iteratee.
+ * An input could have one of three types:
+ *   - A chunk of of input (C[E])
+ *   - End of stream signal (eof)
+ *   - failure  (a string message of the failure).
+ *
+ *   TODO(jsuereth): Failure might also need to include a mechanism to rethread an Iteratee to
+ *   this point in the stream.   M[A] => Iteratee[C,E,M,A] where M holds the stream.
+ */
+sealed trait Input[C[_], E] {
+  def apply[Z](chunk: (=> C[E]) => Z, eof: => Z, failure : String => Z): Z
 }
 
-/** A pure iteratee computation which is either done or needs more input **/
-sealed trait IterV[E, A] {
-  import IterV._
-  def fold[Z](done: (=> A, => Input[E]) => Z, cont: (Input[E] => IterV[E, A]) => Z): Z
-  def apply[F[_]](f: F[E])(implicit e: Enumerator[F]): IterV[E, A] = e(f, this)
-  def run: A = {
-    def runCont(i: IterV[E, A]) = i.fold(done = (x, _) => Some(x), cont = _ => None)
-    fold(done = (x, _) => x,
-          cont = k => runCont(k(EOF[E])).getOrElse(error("Diverging iteratee!")))
+/**Type class for dealing with stream chunks
+ * TODO - Make this work well with byte buffers as Buffer[Byte]
+ */
+sealed trait StreamChunk[C[_]] {
+  def length[E](chunk: C[E]): Int
+  def head[E](chunk: C[E]): E
+  def tail[E](chunk: C[E]): C[E]
+  def toSeq[E](chunk : C[E]): Seq[E]
+  def fromSeq[E](chunk : Seq[E]) : C[E]
+  def toArray[E](chunk : C[E])(implicit cmf : ClassManifest[E]): Array[E]
+}
+
+object StreamChunk {
+  // Implementation for StreamChunks of one or no value.
+  implicit def optchunk = new StreamChunk[Option] {
+    def length[E](chunk : Option[E]) = 
+      chunk.map(_ => 1).getOrElse(0)
+    def head[E](chunk : Option[E]) = chunk.get // unsafe
+    def tail[E](chunk : Option[E]) = None
+    def toSeq[E](chunk : Option[E]) = chunk.toSeq
+    def fromSeq[E](chunk : Seq[E]) = chunk.headOption // unsafe
+    def toArray[E](chunk : Option[E])(implicit cmf : ClassManifest[E]) =
+      chunk.map(Array(_)).getOrElse(Array())
   }
-  def drop1First: IterV[E, A] = drop(1) flatMap (_ => this)
+  import collection.mutable.Buffer
+  implicit def bufferchunk = new StreamChunk[Buffer] {
+    def length[E](chunk : Buffer[E]) = chunk.length
+    def head[E](chunk : Buffer[E]) = chunk.head
+    def tail[E](chunk : Buffer[E]) = chunk.tail
+    def toSeq[E](chunk : Buffer[E]) = chunk.toSeq
+    def fromSeq[E](col : Seq[E]) = col.toBuffer
+    def toArray[E](chunk : Buffer[E])(implicit cmf : ClassManifest[E]) = chunk.toArray
+  }
 }
 
-/** Monadic Iteratees **/
-sealed trait IterVM[M[_], E, A] {
-  import IterV._
-  def fold[Z](done: (=> A, => Input[E]) => Z, cont: (Input[E] => Iteratee[M, E, A]) => Z): Z
+/**A generic stream processor.  This is what is being folded over a stream to attempt to produce a value.
+ * IterGV exists in one of two states: Done or NotDone (Cont).
+ *
+ * The monad M defines the type of computations done by the Iteratee as it processes the stream.
+ */
+sealed trait IterGV[C[_], E, M[_], A] {
+  import IterGV._
+  // TODO(jsuereth): Add error state and 'seek' info to the fold method.
+  def fold[Z](done: (=> A, => Input[C, E]) => Z, cont: (=> Iteratee[C, E, M, A]) => Z): Z
+  def apply[F[_]](f: F[E])(implicit e: Enumerator[F]): IterGV[C, E, M, A] = e(f, this)
+  def run(implicit m : Monad[M], s : StreamChunk[C]): M[A] = {
+    def runCont(i: IterGV[C, E, M, A]) = i.fold(done = (x, _) => Some(x), cont = _ => None)
+    fold[M[A]](
+         done = (x, _) => m.pure(x),
+         cont = { k => 
+           k.apply(EOF[C,E]) map (i => runCont(i).getOrElse(error("Divergent iteratee")))
+         }
+        )
+  }
+  //def drop1First: IterGV[C, E, M, A] = drop(1) flatMap (_ => this)
 }
-
-case class Iteratee[M[_], E, A](value: M[IterVM[M, E, A]]) extends NewType[M[IterVM[M, E, A]]]
 
 /** An Enumerator[F] feeds data from an F to an iteratee **/
 trait Enumerator[F[_]] {
-  def apply[E, A](f: F[E], i: IterV[E, A]): IterV[E, A]
+  def apply[E, C[_], M[_], A](f: F[E], i: IterGV[C, E, M, A]): IterGV[C, E, M, A]
 }
 
+case class Iteratee[C[_], E, M[_], A]( iter : (=> Input[C, E]) => M[IterGV[C,E,M,A]]) {
+  def apply(i : => Input[C,E]) : M[IterGV[C,E,M,A]] = iter(i)
 
-object IterV {
-  /** An EnumeratorM[M, _, _] feeds data in a monad M to an iteratee **/
-  type EnumeratorM[M[_], E, A] = IterV[E, A] => M[IterV[E, A]]
+  def flatMap[B](f : A => Iteratee[C,E,M,B])(implicit m : Monad[M]) : Iteratee[C,E,M,B] = {
+    
+    Iteratee(input =>
+      iter(input).flatMap { i =>
+        i.fold(
+         done = (a, chunk) => f(a)(chunk),
+         cont = (i) => m.pure(IterGV.Cont(i flatMap f))
+        )
+      }
+    )
+  }
+}
+
+object IterGV {
 
   /** A computation that has finished **/
   object Done {
-    def apply[E, A](a: => A, i: => Input[E]): IterV[E, A] = new IterV[E, A] {
-      def fold[Z](done: (=> A, => Input[E]) => Z,
-                  cont: (Input[E] => IterV[E, A]) => Z): Z = done(a, i)
+    def apply[C[_], E, M[_], A](a: => A, i: => Input[C, E]): IterGV[C, E, M, A] = new IterGV[C, E, M, A] {
+      def fold[Z](done: (=> A, => Input[C, E]) => Z,
+                  cont: (=> Iteratee[C, E, M, A]) => Z): Z = done(a, i)
     }
-    def unapply[E, A](r: IterV[E, A]): Option[(A, Input[E])] =
-      r.fold[Option[(A,Input[E])]](
+    def unapply[C[_], E, M[_], A](r: IterGV[C, E, M, A]): Option[(A, Input[C, E])] =
+      r.fold[Option[(A,Input[C, E])]](
         done = (a, i) => Some((a, i)),
         cont = f => None)
   }
 
   /** A computation that takes an element from an input to yield a new computation **/
   object Cont {
-    def apply[E, A](f: Input[E] => IterV[E, A]): IterV[E, A] = new IterV[E, A] {
-      def fold[Z](done: (=> A, => Input[E]) => Z,
-                  cont: (Input[E] => IterV[E, A]) => Z): Z = cont(f)
+    def apply[C[_],E, M[_],A](f : (=> Input[C,E]) => M[IterGV[C,E,M,A]]) :IterGV[C,E,M,A] = apply(Iteratee(f))
+    def apply[C[_], E, M[_], A](f: Iteratee[C, E, M, A]): IterGV[C, E, M, A] = new IterGV[C, E, M, A] {
+      def fold[Z](done: (=> A, => Input[C, E]) => Z,
+                  cont: (=> Iteratee[C,E,M,A]) => Z): Z = cont(f)
     }
-    def unapply[E, A](r: IterV[E, A]): Option[Input[E] => IterV[E, A]] =
-      r.fold[Option[Input[E] => IterV[E, A]]](
+    def unapply[C[_], E, M[_], A](r: IterGV[C, E, M, A]): Option[Iteratee[C,E,M,A]] =
+      r.fold[Option[Iteratee[C,E,M,A]]](
         done = (a, i) => None,
-        cont = Some(_))
-  }
-
-  /** A monadic computation that has finished **/
-  object DoneM {
-    def apply[M[_], E, A](a: => A, i: => Input[E]): IterVM[M, E, A] = new IterVM[M, E, A] {
-      def fold[Z](done: (=> A, => Input[E]) => Z,
-                  cont: (Input[E] => Iteratee[M, E, A]) => Z): Z = done(a, i)
-    }
-    def unapply[M[_], E, A](r: IterVM[M, E, A]): Option[(A, Input[E])] =
-      r.fold[Option[(A, Input[E])]](
-        done = (a, i) => Some((a, i)),
-        cont = f => None)
-  }
-
-  object ContM {
-    def apply[M[_], E, A](f: Input[E] => Iteratee[M, E, A]): IterVM[M, E, A] = new IterVM[M, E, A] {
-      def fold[Z](done: (=> A, => Input[E]) => Z,
-                  cont: (Input[E] => Iteratee[M, E, A]) => Z): Z = cont(f)
-    }
-    def unapply[M[_], E, A](r: IterVM[M, E, A]): Option[Input[E] => Iteratee[M, E, A]] =
-      r.fold[Option[Input[E] => Iteratee[M, E, A]]](
-        done = (a, i) => None,
-        cont = f => Some(f))
+        cont = (i) => Some(i))
   }
 
   /** An iteratee that consumes the head of the input **/
-  def head[E] : IterV[E, Option[E]] = {
-    def step(s: Input[E]): IterV[E, Option[E]] =
-      s(el = e => Done(Some(e), Empty[E]),
-        empty = Cont(step),
-        eof = Done(None, EOF[E]))
-    Cont(step)
+  def head[C[_], E, M[_]](implicit m : Monad[M], s : StreamChunk[C]) : IterGV[C, E, M, Option[E]] = {
+    def step(in: => Input[C, E]): M[IterGV[C, E, M, Option[E]]] =
+      m.pure(in(chunk = e => if(s.length(e) > 0)
+          Done(Some(s.head(e)), Chunk(s.tail(e)))
+        else Cont(step _),
+        failure = msg => Done(None, Failure[C,E](msg)),
+        eof = Done(None, EOF[C,E])))
+    Cont(step _)
   }
 
   /** An iteratee that returns the first element of the input **/
-  def peek[E] : IterV[E, Option[E]] = {
-    def step(s: Input[E]): IterV[E, Option[E]]
-      = s(el = e => Done(Some(e), s),
-          empty = Cont(step),
-          eof = Done(None, EOF[E]))
-    Cont(step)
+  def peek[C[_], E, M[_]](implicit s : StreamChunk[C], m : Monad[M]) : IterGV[C, E, M, Option[E]] = {
+    def step(in: => Input[C, E]): M[IterGV[C, E, M, Option[E]]] =
+      m.pure(in match {
+        case Chunk(c) if s.length(c) == 0 => Cont(step _)          // TODO - Done(None, in)?
+        case Chunk(c) => Done(Option(s.head(c)), in)
+        case x => Done(None, x)
+      })
+    Cont(step _)
   }
 
   /** Peeks and returns either a Done iteratee with the given value or runs the given function with the peeked value **/
-  def peekDoneOr[A, B](b: => B, f: A => IterV[A, B]): IterV[A, B] =
-    peek[A] >>= (_.iterDoneOr(b, f))
+  //def peekDoneOr[A, B](b: => B, f: A => IterV[A, B]): IterV[A, B] =
+  //  peek[A] >>= (_.iterDoneOr(b, f))
 
   /** An iteratee that skips the first n elements of the input **/
-  def drop[E](n: Int): IterV[E, Unit] = {
-    def step(s: Input[E]): IterV[E, Unit] =
-      s(el = _ => drop(n - 1),
-        empty = Cont(step),
-        eof = Done((), EOF[E]))
-    if (n == 0) Done((), Empty[E])
-    else Cont(step)
-  }
+  //def drop[E](n: Int): IterV[E, Unit] = {
+  //  def step(s: Input[E]): IterV[E, Unit] =
+  //    s(el = _ => drop(n - 1),
+  //      empty = Cont(step),
+  //      eof = Done((), EOF[E]))
+  //  if (n == 0) Done((), Empty[E])
+  //  else Cont(step)
+  //}
 
   /** An iteratee that counts and consumes the elements of the input **/
-  def length[E] : IterV[E, Int] = {
-    def step(acc: Int)(s: Input[E]): IterV[E, Int] =
-      s(el = _ => Cont(step(acc + 1)),
-        empty = Cont(step(acc)),
-        eof = Done(acc, EOF[E]))
-    Cont(step(0))
-  }
+  //def length[E] : IterV[E, Int] = {
+  //  def step(acc: Int)(s: Input[E]): IterV[E, Int] =
+  //    s(el = _ => Cont(step(acc + 1)),
+  //      empty = Cont(step(acc)),
+  //      eof = Done(acc, EOF[E]))
+  //  Cont(step(0))
+  //}
 
   /**
    * Takes while the given predicate holds, appending with the given monoid.
    */
-  def takeWhile[A, F[_]](pred: A => Boolean)(implicit mon: Monoid[F[A]], pr: Pure[F]): IterV[A, F[A]] = {
-    def peekStepDoneOr(z: F[A]) = peekDoneOr(z, step(z, _: A))
-
-    def step(acc: F[A], a: A): IterV[A, F[A]] = {
-      if (pred(a))
-        drop(1) >>=| peekStepDoneOr(acc |+| a.η[F])
-      else
-        Done(acc, EOF.apply)
-    }
-    peekStepDoneOr(∅[F[A]])
-  }
+  //def takeWhile[A, F[_]](pred: A => Boolean)(implicit mon: Monoid[F[A]], pr: Pure[F]): IterV[A, F[A]] = {
+  //  def peekStepDoneOr(z: F[A]) = peekDoneOr(z, step(z, _: A))
+  //
+  //  def step(acc: F[A], a: A): IterV[A, F[A]] = {
+  //    if (pred(a))
+  //      drop(1) >>=| peekStepDoneOr(acc |+| a.η[F])
+  //    else
+  //      Done(acc, EOF.apply)
+  //  }
+  //  peekStepDoneOr(∅[F[A]])
+  //}
 
   /**
    * Produces chunked output split by the given predicate.
    */
-  def groupBy[A, F[_]](pred: (A, A) => Boolean)(implicit mon: Monoid[F[A]], pr: Pure[F]): IterV[A, F[A]] = {
-    IterV.peek >>= {
-      case None => Done(∅[F[A]], Empty[A])
-      case Some(h) => takeWhile(pred(_, h))
-    }
-  }
+  //def groupBy[A, F[_]](pred: (A, A) => Boolean)(implicit mon: Monoid[F[A]], pr: Pure[F]): IterV[A, F[A]] = {
+  //  IterV.peek >>= {
+  //    case None => Done(∅[F[A]], Empty[A])
+  //    case Some(h) => takeWhile(pred(_, h))
+  //  }
+  //}
 
   /**
    * Repeats the given iteratee by appending with the given monoid.
    */
-  def repeat[E,A, F[_]](iter: IterV[E,A])(implicit mon: Monoid[F[A]], pr: Pure[F]): IterV[E, F[A]] = {
-	  def step(s: F[A]): Input[E] => IterV[E, F[A]] = {
-	    case EOF() => Done(s, EOF.apply)
-	    case Empty() => Cont(step(s))
-	    case El(e) => iter match {
-	      case Done(a, _) => Done(s |+| a.η[F], El(e))
-	      case Cont(k) => for {
-	        h <- k(El(e))
-	        t <- repeat(iter)
-	      } yield s |+| h.η[F] |+| t
-	    }
-	  }
-	  Cont(step(∅[F[A]]))
-	}
+//  def repeat[E,A, F[_]](iter: IterV[E,A])(implicit mon: Monoid[F[A]], pr: Pure[F]): IterV[E, F[A]] = {
+//	  def step(s: F[A]): Input[E] => IterV[E, F[A]] = {
+//	    case EOF() => Done(s, EOF.apply)
+//	    case Empty() => Cont(step(s))
+//	    case El(e) => iter match {
+//	      case Done(a, _) => Done(s |+| a.η[F], El(e))
+//	      case Cont(k) => for {
+//	        h <- k(El(e))
+//	        t <- repeat(iter)
+//	      } yield s |+| h.η[F] |+| t
+//	    }
+//	  }
+//	  Cont(step(∅[F[A]]))
+//	}
 
-  /** Input that has a value available **/
-  object Empty {
-    def apply[E] : Input[E] = new Input[E] {
-      def apply[Z](empty: => Z, el: (=> E) => Z, eof: => Z): Z = empty
-    }
-    def unapply[E](r: Input[E]): Boolean =
-        r.apply[Either[Input[E], Boolean]](
-          empty = Right(true),
-          el = e => Left(El(e)),
-          eof = Left(EOF[E])).fold(x => false, x => x)
-  }
 
-  /** Input that has no values available  **/
-  object El {
-    def apply[E](e0: => E): Input[E] = new Input[E] {
-      def apply[Z](empty: => Z, el: (=> E) => Z, eof: => Z): Z = el(e0)
+  /** A chunk of input. **/
+  object Chunk {
+    def apply[C[_], E](e0: => C[E]): Input[C, E] = new Input[C, E] {
+      def apply[Z](chunk: (=> C[E]) => Z, eof: => Z, failure : String => Z): Z = chunk(e0)
     }
-    def unapply[E](r: Input[E]): Option[E] =
-      r.apply[Either[Input[E], (E)]](
-        empty = Left(Empty[E]),
-        el = e => Right(e),
-        eof = Left(EOF[E])).right.toOption
+
+    def unapply[C[_], E](r: Input[C, E]): Option[C[E]] =
+      r.apply[Option[C[E]]](
+        failure = _ => None,
+        chunk = e => Some(e),
+        eof = None)
   }
 
   /** Input that is exhausted **/
   object EOF {
-    def apply[E] : Input[E] = new Input[E] {
-      def apply[Z](empty: => Z, el: (=> E) => Z, eof: => Z): Z = eof
+    def apply[C[_], E] : Input[C, E] = new Input[C, E] {
+      def apply[Z](chunk: (=> C[E]) => Z, eof: => Z, failure : String => Z): Z = eof
     }
-    def unapply[E](r: Input[E]): Boolean =
-      r.apply[Either[Input[E], Boolean]](
-        empty = Left(Empty[E]),
-        el = e => Left(El(e)),
-        eof = Right(true)).fold(x => false, x => x)
+    def unapply[C[_], E](r: Input[C, E]): Boolean =
+      r.apply[Boolean](
+        failure = msg => false,
+        chunk = e => false,
+        eof = true)
+  }
+
+   /** A failure state from the input stream.  TODO(jsuereth): should have a seekable Iteratee to recover. **/
+  object Failure {
+    def apply[C[_], E](msg : => String): Input[C, E] = new Input[C, E] {
+      def apply[Z](chunk: (=> C[E]) => Z, eof: => Z, failure : String => Z): Z = failure(msg)
+    }
+
+    def unapply[C[_], E](r: Input[C, E]): Option[String] =
+      r.apply[Option[String]](
+        failure = msg => Some(msg),
+        chunk = i => None,
+        eof = None)
   }
 }
 

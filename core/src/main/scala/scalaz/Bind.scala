@@ -176,14 +176,16 @@ object Bind {
     def bind[A, B](r: Promise[A], f: A => Promise[B]) = r flatMap f
   }
   
-  implicit def IterVBind[E]: Bind[({type λ[α]=IterV[E, α]})#λ] = new Bind[({type λ[α]=IterV[E, α]})#λ] {
-    import IterV._
-    def bind[A, B](a: IterV[E, A], f: A => IterV[E, B]) = a.fold(
-      done = (x, str) => f(x).fold(
-        done = (x2, _) => Done(x2, str),
-        cont = _(str)),
-      cont = k => Cont(str2 => bind(k(str2), f)))
-  }
+  /*implicit def IterGVBind[C[_], E, M[_]](implicit m : Monad[M]): Bind[({type λ[α]=IterGV[C, E, M, α]})#λ] =
+    new Bind[({type λ[α]=IterGV[C, E, M, α]})#λ] {
+      import IterGV._
+      def bind[A, B](a: IterGV[C, E, M, A], f: A => IterGV[C, E, M, B]) = a.fold(
+        done = (x, i) => f(x).fold(
+          done = (x2, _) => Done(x2, i),
+          cont = x => x.apply(i)),
+        cont = k => Cont[C,E,M,B](str2 : Input[C,E] => m.bind(k.apply(str2), (t : A) => bind(t, f)))
+      )
+    }  */
 
   import java.util._
   import java.util.concurrent._

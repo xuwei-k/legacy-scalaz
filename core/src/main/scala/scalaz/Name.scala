@@ -54,7 +54,7 @@ trait Names {
   implicit def nameToFunction5[A,R, S, T, U, V] = pureName[({type λ[α]=(R, S, T, U, V) => α})#λ,A] _
   implicit def nameToFunction6[A,R, S, T, U, V, W] = pureName[({type λ[α]=(R, S, T, U, V, W) => α})#λ,A] _
   implicit def nameToIdentity[A] = pureName[Identity,A] _
-  implicit def nameToIterV[A,E]  = pureName[({type λ[α]=IterV[E, α]})#λ,A] _
+  implicit def nameToIterGV[C[_],E,M[_], A](implicit s : StreamChunk[C])  = pureName[({type λ[α]=IterGV[C, E, M, α]})#λ,A] _
   implicit def nameToJavaArrayBlockingQueue[A] = pureName[ArrayBlockingQueue,A] _
   implicit def nameToJavaArrayList[A] = pureName[ArrayList,A] _
   implicit def nameToJavaConcurrentLinkedQueue[A] = pureName[ConcurrentLinkedQueue,A] _

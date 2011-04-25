@@ -2,12 +2,19 @@ package scalaz.io
 import scalaz._
 import Scalaz._
 import java.nio.ByteBuffer
+import collection.mutable.Buffer
 import IterV._
 
 /** Iteratee's that read streams of byte buffers and make sense
  * of them. 
  */
 object ByteBuffers {
+
+   case class ByteBufferHolder[A](byteBuffer : ByteBuffer) extends collection.mutable.Buffer[Byte] {
+      // TODO - Adapt for usage in general purpose Iteratee lib.
+   }
+
+
   /** Parses an int out of a stream of ByteBuffers. */
   def parseInt : IterV[ByteBuffer, Long] =  for {
     buf <- bufferComplete(4)

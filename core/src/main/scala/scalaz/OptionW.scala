@@ -123,10 +123,10 @@ sealed trait OptionW[A] extends PimpedType[Option[A]] {
   /**
    * Returns a Done iteratee with the given value if the Option is not defined, otherwise runs the given function.
    */
-  def iterDoneOr[B](b: => B, f: A => IterV[A, B]): IterV[A, B] = value match {
+  /*def iterDoneOr[B](b: => B, f: A => IterV[A, B]): IterV[A, B] = value match {
     case None    => IterV.Done(b, IterV.EOF.apply)
     case Some(a) => f(a)
-  }
+  }*/
 }
 
 trait Options {

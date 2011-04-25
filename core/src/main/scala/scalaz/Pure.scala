@@ -166,9 +166,9 @@ object Pure {
     def pure[A](a: => A) = Failure(a).fail
   }
   
-  implicit def IterVPure[E] = new Pure[({type λ[α]=IterV[E, α]})#λ] {
-    import IterV._
-    def pure[A](a: => A) = Done(a, Empty[E])
+  implicit def IterGVPure[C[_], E, M[_]](implicit s : StreamChunk[C]) = new Pure[({type λ[α]=IterGV[C, E, M, α]})#λ] {
+    import IterGV._
+    def pure[A](a: => A) = Done(a, Chunk(s.fromSeq(Seq())))
   }
 
   implicit def ZipperPure = new Pure[Zipper] {
