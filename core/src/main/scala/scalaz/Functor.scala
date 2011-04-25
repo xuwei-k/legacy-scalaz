@@ -152,15 +152,15 @@ object Functor {
     def fmap[A, B](r: Responder[A], f: A => B) = r map f
   }
 
-  implicit def IterVFunctor[X]: Functor[({type λ[α]=IterV[X, α]})#λ] = new Functor[({type λ[α]=IterV[X, α]})#λ] {
-    import IterV._
-    def fmap[A, B](r: IterV[X, A], f: A => B) = {
+  /*implicit def IterGVFunctor[C[_], X, M[_]]: Functor[({type λ[α]=IterGV[C, X, M, α]})#λ] = new Functor[({type λ[α]=IterGV[C, X, M, α]})#λ] {
+    import IterGV._
+    def fmap[A, B](r: IterGV[C, X, M, A], f: A => B) = {
       r fold (
               done = (a, i) => Done(f(a), i),
               cont = k => Cont(i => fmap(k(i), f))
               )
     }
-  }
+  }*/
 
   implicit def KleisliFunctor[M[_], P](implicit ff: Functor[M]): Functor[({type λ[α]=Kleisli[M, P, α]})#λ] = new Functor[({type λ[α]=Kleisli[M, P, α]})#λ] {
     def fmap[A, B](k: Kleisli[M, P, A], f: A => B): Kleisli[M, P, B] = ☆((p: P) => ff.fmap(k(p), f))

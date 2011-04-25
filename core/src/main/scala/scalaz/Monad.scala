@@ -92,8 +92,8 @@ object Monad extends MonadLow {
   implicit def EitherMonad[X] =
     monad[({type λ[α] = Either[X, α]})#λ](EitherBind, EitherPure)
 
-  implicit def IterVMonad[E] =
-    monad[({type λ[α] = IterV[E, α]})#λ](IterVBind, IterVPure)
+  /*implicit def IterVMonad[E] =
+    monad[({type λ[α] = IterV[E, α]})#λ](IterVBind, IterVPure)*/
 
   import java.util.Map.Entry
 

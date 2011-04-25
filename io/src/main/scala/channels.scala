@@ -43,6 +43,7 @@ object Channels {
        } else EOF[ByteBuffer]
      }
   }
+
   /** Enumerator that will drive data from a given input through an Iteratee. */
   implicit object ChannelEnumerator extends Enumerator[InputChannel] {
       def apply[E, A](channel: InputChannel[E], i: IterV[E, A]): IterV[E, A] = {
