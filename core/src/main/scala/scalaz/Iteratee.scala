@@ -16,56 +16,52 @@ trait Iteratees {
 
 
   sealed trait Iteratee[C,M[_],A] {
-    def fold[R](done : (=> A,  => Input[C]) => R,
-                cont : ((=> Input[C]) => Iteratee[C,M,A]) => R,
-                error : (=> Error) => R
-                ) : R
+    def fold[R](done : (=> A,  => Input[C]) => M[R],
+                cont : ((=> Input[C]) => Iteratee[C,M,A]) => M[R],
+                error : (=> Error) => M[R]
+                ) : M[R]
 
-    def mapIteratee[N[_]](f : M[A] => N[B])(implicit m : Monad[M], n : Monad[N], s : NullPoint[C]) : Iteratee[C,N,B] = error("todo")
+    def mapIteratee[N[_],B](f : M[A] => N[B])(implicit m : Monad[M], n : Monad[N], s : EmptyChunk[C]) : Iteratee[C,N,B] = error("todo")
     def run(implicit m : Monad[M]) : M[A] = error("todo")
+
+    /*def apply(chunk : => Input[C]) : Iteratee[C,M,A] =
+      fold(done = (value, input) => Done(value, input),
+           error = (msg) => Failure(msg),
+           cont = (f) => f(chunk))*/
   }
   // TODO -
 
   object Done {
-    def apply[C,M[_], A]( a : => A, input : => Input[C]) = new Iteratee[C,M,A] {
-      def fold[R](done : (=> A,  => Input[C]) => R,
-                  cont : ((=> Input[C]) => Iteratee[C,M,A]) => R,
-                  error : (=> Error) => R
-                  ) : R = done(a, input)
+    def apply[C,M[_], A]( a : => A, input : => Input[C])(implicit m : Monad[M]) = new Iteratee[C,M,A] {
+      def fold[R](done : (=> A,  => Input[C]) => M[R],
+                  cont : ((=> Input[C]) => Iteratee[C,M,A]) => M[R],
+                  error : (=> Error) => M[R]
+                  ) : M[R] = done(a, input)
     }
-    def unapply[C,M[_], A](i : Iteratee[C,M,A]) : Option[(A, Input[C])] =
-      i.fold(done = { (value, lastInput) => Some((value, lastInput)) },
-             cont = ignore =>  None,
-             error = ignore => None)
   }
 
   object Cont {
     def apply[C, M[_],A](f : (=> Input[C]) => Iteratee[C,M,A]) = new Iteratee[C,M,A] {
-      def fold[R](done : (=> A,  => Input[C]) => R,
-                  cont : ((=> Input[C]) => Iteratee[C,M,A]) => R,
-                  error : (=> Error) => R
-                  ) : R = cont(f)
+      def fold[R](done : (=> A,  => Input[C]) => M[R],
+                  cont : ((=> Input[C]) => Iteratee[C,M,A]) => M[R],
+                  error : (=> Error) => M[R]
+                  ) : M[R] = cont(f)
     }
-    def unapply[C,M[_], A](i : Iteratee[C,M,A]) : Option[(=> Input[C]) => Iteratee[C,M,A]] =
-      i.fold(done = (_,_) => None,
-             cont = Some(_),
-             error = _ => None)
   }
   object Failure {
     def apply[C, M[_], A](err : => Error) = new Iteratee[C,M,A] {
-      def fold[R](done : (=> A,  => Input[C]) => R,
-                  cont : ((=> Input[C]) => Iteratee[C,M,A]) => R,
-                  error : (=> Error) => R
-                  ) : R = error(err)
+      def fold[R](done : (=> A,  => Input[C]) => M[R],
+                  cont : ((=> Input[C]) => Iteratee[C,M,A]) => M[R],
+                  error : (=> Error) => M[R]
+                  ) : M[R] = error(err)
     }
-    def unapply[C, M[_], A](i : Iteratee[C,M,A]) : Option[Error] =
-      i.fold(done = (_,_) => None,
-             cont = _ => None,
-             error = Some(_))
   }
 
   trait Nullable[S] {
     def isNull(s : S) : Boolean
+  }
+  trait EmptyChunk[C] {
+    def empty : C
   }
 }
 
