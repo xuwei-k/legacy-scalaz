@@ -377,9 +377,6 @@ trait MAs extends MAsLow {
 
   implicit def ValidationFailureMA[A, E](f: FailProjection[E, A]) = ma[({type λ[α]=FailProjection[α, A]})#λ, E](f)
 
-  implicit def IterGVMA[C[_], E, M[_], A](v: IterGV[C, E, M, A])(implicit s : StreamChunk[C]): MA[({type λ[α] = IterGV[C, E, M, α]})#λ, A] =
-    ma[({type λ[α]=IterGV[C, E, M, α]})#λ, A](v)
-
   import java.util.Map.Entry
 
   implicit def MapEntryMA[X, A](e: Entry[X, A]) = ma[({type λ[α]=Entry[X, α]})#λ, A](e)
