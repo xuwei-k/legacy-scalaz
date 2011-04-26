@@ -56,6 +56,28 @@ trait Iteratees {
                   ) : M[R] = error(err)
     }
   }
+  /** An enumerator is something that takes an iteratee and drives
+   * input thorugh it.
+   */
+  trait Enumerator[C, M[_], A] {
+     def apply(i : Iteratee[C,M,A])(implicit m : Monad[M]) : M[Iteratee[C,M,A]]
+  }
+
+  /** An enumerator that just pushes an EOF to the Iteratee */
+  def enumEof[C, M[_], A] = new Enumerator[C,M,A] {
+    def apply(i : Iteratee[C,M,A])(implicit m : Monad[M]) : M[Iteratee[C,M,A]] =
+      i.fold(
+         cont = (f) => m.pure(f(EOF[C](None))),
+         done = (value, input) => m.pure(Done(value,input)),
+         error = (msg) => m.pure(Failure(msg))
+      )
+  }
+  /** An enumeratee is something that both reads and writes to a location. */
+  trait Enumeratee[CFrom,CTo, M[_], A] {
+    def apply(i : Iteratee[CTo,M,A]) : Iteratee[CFrom, M, Iteratee[CTo,M,A]]
+  }
+
+  
 
   trait Nullable[S] {
     def isNull(s : S) : Boolean
