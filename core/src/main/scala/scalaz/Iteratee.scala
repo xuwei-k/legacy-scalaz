@@ -22,7 +22,13 @@ trait Iteratees {
                 ) : M[R]
 
     def mapIteratee[N[_],B](f : M[A] => N[B])(implicit m : Monad[M], n : Monad[N], s : EmptyChunk[C]) : Iteratee[C,N,B] = error("todo")
-    def run(implicit m : Monad[M]) : M[A] = error("todo")
+    def run(implicit m : Monad[M]) : M[A] = {
+      enumEof[C,M,A](this).flatMap(_.fold(
+        done = (value, _) => m.pure(value),
+        error = (msg) => m.pure(error(msg)),
+        cont  = (f) => m.pure(error("Divergent Iteratee!"))
+      ))
+    }
 
     /*def apply(chunk : => Input[C]) : Iteratee[C,M,A] =
       fold(done = (value, input) => Done(value, input),
