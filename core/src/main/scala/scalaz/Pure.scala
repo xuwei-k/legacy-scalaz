@@ -165,11 +165,6 @@ object Pure {
   implicit def ValidationFailurePure[X]: Pure[({type λ[α]=FailProjection[α, X]})#λ] = new Pure[({type λ[α]=FailProjection[α, X]})#λ] {
     def pure[A](a: => A) = Failure(a).fail
   }
-  
-  implicit def IterGVPure[C[_], E, M[_]](implicit s : StreamChunk[C]) = new Pure[({type λ[α]=IterGV[C, E, M, α]})#λ] {
-    import IterGV._
-    def pure[A](a: => A) = Done(a, Chunk(s.fromSeq(Seq())))
-  }
 
   implicit def ZipperPure = new Pure[Zipper] {
     def pure[A](a: => A) = a.zipper
