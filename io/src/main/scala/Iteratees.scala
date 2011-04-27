@@ -2,7 +2,7 @@ package scalaz
 
 import Scalaz._
 /** A module for the generic implementation of Iteratees */
-trait Iteratees {
+object Iteratees {
 
   type Error = String // TODO -Better error type.
   /**
@@ -22,6 +22,7 @@ trait Iteratees {
                 ) : M[R]
 
     def mapIteratee[N[_],B](f : M[A] => N[B])(implicit m : Monad[M], n : Monad[N], s : EmptyChunk[C]) : Iteratee[C,N,B] = error("todo")
+    /** Sends an EOF to the stream and tries to extract the value.  Note: this can pass errors into the Monad */
     def run(implicit m : Monad[M]) : M[A] = {
       enumEof[C,M,A](this).flatMap(_.fold(
         done = (value, _) => m.pure(value),
@@ -35,7 +36,18 @@ trait Iteratees {
            error = (msg) => Failure(msg),
            cont = (f) => f(chunk))*/
   }
-  // TODO -
+
+  /**Flattens an Iteratee inside the Monad M to just be an Iteratee.
+   * This works because Iteratees are threaded through the Monad M.
+   */
+  def flattenI[C, M[_], A](i : M[Iteratee[C,M,A]])(implicit m : Monad[M]) = new Iteratee[C,M,A] {
+    def fold[R](done : (=> A,  => Input[C]) => M[R],
+                cont : ((=> Input[C]) => Iteratee[C,M,A]) => M[R],
+                error : (=> Error) => M[R]
+                ) : M[R] =
+      i.flatMap(x => x.fold(done = done, cont = cont, error = error))
+  }
+
 
   object Done {
     def apply[C,M[_], A]( a : => A, input : => Input[C])(implicit m : Monad[M]) = new Iteratee[C,M,A] {
@@ -54,6 +66,7 @@ trait Iteratees {
                   ) : M[R] = cont(f)
     }
   }
+
   object Failure {
     def apply[C, M[_], A](err : => Error) = new Iteratee[C,M,A] {
       def fold[R](done : (=> A,  => Input[C]) => M[R],
@@ -92,6 +105,3 @@ trait Iteratees {
     def empty : C
   }
 }
-
-// TODO - Better moduling?
-object Iteratees extends Iteratees
