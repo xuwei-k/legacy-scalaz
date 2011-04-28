@@ -26,6 +26,7 @@ package object iteratees {
       )
   }
 
+  /** Pulls the length from an enumeratee */
   def readLength[C,M[_]]( sizeOfChunk : C => Long)(implicit m : Monad[M]) : Iteratee[C,M,Long] = {
     def step(curSize : Long)(in : Input[C]) : Iteratee[C,M,Long] = in match {
       case Chunk(c) => Cont( i => step(curSize + sizeOfChunk(c))(i))
@@ -34,6 +35,4 @@ package object iteratees {
     }
     Cont(i => step(0)(i))
   }
-
-
 }

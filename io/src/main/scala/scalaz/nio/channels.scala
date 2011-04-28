@@ -63,4 +63,7 @@ object Channels {
     }
     Cont(i => step(channel)(i))
   }
+
+  // TODO - enumeratee to convert from ByteBuffer to Char stream...
+  // TODO - enumeratee to convert ByteBuffer stream to 'Serialized java object' stream?
 }

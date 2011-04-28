@@ -3,14 +3,35 @@ package scalaz.iteratees
 import scalaz._
 import Scalaz._
 
+/**
+ * A generic stream processor.  An Iteratee takes 'chunked' input of type C, processes it inside the monad M and
+ * returns a result of type A.
+ *
+ * Iteratees have three potential states:
+ * - cont => Requires more data
+ * - done => Complete with remaining Chunked input.
+ * - error => Encountered some form of error during processing.
+ *
+ * Note: Iteratees are threaded through the Monad M.  For simple 'strict' iterators, or for testing, it's useful
+ * to use Id for M.
+ */
 sealed trait Iteratee[C,M[_],A] {
-  /** Fold over the current possible states of this iteratee. */
+  /**Fold over the current possible states of this iteratee.
+   * @param done  This function will be called if the Iteratee is in a done state.  It accepts two parameters,
+   *              the resulting value of this iteratee and the remaining input chunk from processing.
+   * @param cont This function will be called if the Iteratee needs more input.   The continuation takes
+   *               more input and returns the resulting iteratee.
+   * @param error This function is called with the error if there was any during the processing.
+   */
   def fold[R](done : (=> A,  => Input[C]) => M[R],
               cont : ((=> Input[C]) => Iteratee[C,M,A]) => M[R],
               error : (=> Error) => M[R]
               ) : M[R]
   def mapIteratee[N[_],B](f : M[A] => N[B])(implicit m : Monad[M], n : Monad[N], s : EmptyChunk[C]) : Iteratee[C,N,B] = error("todo")
-  /** Sends an EOF to the stream and tries to extract the value.  Note: this can pass errors into the Monad */
+
+  /**Sends an EOF to the stream and tries to extract the value.
+   * Note: this can pass errors into the Monad.   If the monad is strict, this can explode.
+   */
   def run(implicit m : Monad[M]) : M[A] = {
     enumEof[C,M](this).flatMap(_.fold(
       done = (value, _) => m.pure(value),
