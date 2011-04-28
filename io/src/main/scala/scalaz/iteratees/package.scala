@@ -26,12 +26,14 @@ package object iteratees {
       )
   }
 
-  def readLength[C,M[_]]( f : C => Long)(implicit m : Monad[M]) : Iteratee[C,M,Long] = {
+  def readLength[C,M[_]]( sizeOfChunk : C => Long)(implicit m : Monad[M]) : Iteratee[C,M,Long] = {
     def step(curSize : Long)(in : Input[C]) : Iteratee[C,M,Long] = in match {
-      case Chunk(c) => Cont( i => step(curSize + f(c))(i))
+      case Chunk(c) => Cont( i => step(curSize + sizeOfChunk(c))(i))
       case EOF(Some(err)) => Failure(err)
       case EOF(None) => Done(curSize, in)
     }
     Cont(i => step(0)(i))
   }
+
+
 }

@@ -8,6 +8,14 @@ import Scalaz._
  */
 trait Enumerator[C, M[_]] {
   def apply[A](i : Iteratee[C,M,A])(implicit m : Monad[M]) : M[Iteratee[C,M,A]]
+
+  /** Combinator for Enumerators.   Will run through the data in this enumerator and then the data in the
+   *  chained enumerator.
+   */
+  def andThen(e : Enumerator[C,M]) : Enumerator[C,M] = new Enumerator[C,M] {
+    def apply[A](i : Iteratee[C,M,A])(implicit m : Monad[M]) : M[Iteratee[C,M,A]] =
+      this(i).flatMap(e.apply)
+  }
 }
 /** An Enumeratee is something that both reads and writes to a location. */
 trait Enumeratee[CFrom,CTo, M[_]] {
