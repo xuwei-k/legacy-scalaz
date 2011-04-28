@@ -17,7 +17,15 @@ trait Enumerator[C, M[_]] {
       this(i).flatMap(e.apply)
   }
 }
-/** An Enumeratee is something that both reads and writes to a location. */
+
+/** An Enumeratee is something that both reads and writes from a location.
+ *  Enumeratee's are classically used to 'vertically' compose streams.   That is, construct a higher level
+ *  stream from a lower-level stream.
+ *
+ *  Because a low level stream my be exhausted/fail before the higher-level stream, they are both returned.
+ *  That is, the underlying stream (Iteratee[CFrom, M, _]) for the Enumeratee is exposed in the resulting value from
+ *  'driving' the higher level stream (Iteratee[CTo,M,A])
+ */
 trait Enumeratee[CFrom,CTo, M[_]] {
   def apply[A](i : Iteratee[CTo,M,A]) : Iteratee[CFrom, M, Iteratee[CTo,M,A]]
 }
