@@ -12,7 +12,7 @@ object Input {
   /** Instance of Monoid for Input that requires C to be a monoid. */
   implicit def inputMonoid[C](implicit m : Monoid[C]) = new Monoid[Input[C]] {
     override def append(s1: Input[C], s2: => Input[C]) : Input[C] =  (s1, s2) match {
-      case (Chunk(c0), Chunk(c1)) => Chunk(m.append(c0,c1))
+      case (Chunk(c0), Chunk(c1)) => Chunk(c0 |+| c1)
       case (EOF(err), EOF(err2)) => EOF(err orElse err2)
       case (i @ EOF(_), _) => i
       case (_, i @ EOF(_)) => i
