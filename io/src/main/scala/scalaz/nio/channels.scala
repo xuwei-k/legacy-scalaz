@@ -44,7 +44,7 @@ object Channels {
                 cont = (k) => readBuf(state).flatMap { case (channel, input) =>
                   drive(k(input), m.pure(channel))   // TODO - This isn't 'scala' tail recursion, maybe we should trampoline?
                 },
-                error = (_) => m.pure(i)
+                error = (_, _) => m.pure(i)
               )
           }
         }
@@ -61,7 +61,7 @@ object Channels {
           c.write(buf)
           Cont(i => step(m.pure(c))(i))
         })
-      case EOF(Some(err)) => iteratees.Failure(err)
+      case EOF(e@Some(err)) => iteratees.Failure(err, EOF(e))
     }
     Cont(i => step(channel)(i))
   }

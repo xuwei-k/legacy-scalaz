@@ -13,7 +13,7 @@ package object iteratees {
       i.fold(
          cont = (f) => f(EOF[C](None)).pure,
          done = (value, input) => Done(value,input).pure,
-         error = (msg) => Failure(msg).pure
+         error = (msg, input) => Failure(msg, input).pure
       )
   }
 
@@ -22,7 +22,7 @@ package object iteratees {
       i.fold(
         cont = (f) => f(in).pure,
         done = (value, input) => Done(value, input).pure,
-        error = (msg) => Failure(msg).pure
+        error = (msg, input) => Failure(msg, input).pure
       )
   }
 
@@ -30,9 +30,20 @@ package object iteratees {
   def readLength[C,M[_] : Monad]( sizeOfChunk : C => Long): Iteratee[C,M,Long] = {
     def step(curSize: Long)(in: Input[C]): Iteratee[C,M,Long] = in match {
       case Chunk(c) => Cont(step(curSize + sizeOfChunk(c)))
-      case EOF(Some(err)) => Failure(err)
+      case EOF(Some(err)) => Failure(err, EOF(Some(err)))
       case EOF(None) => Done(curSize, in)
     }
     Cont(step(0))
+  }
+
+  /** Seeks to a specific index in the input, buffered by a Rope. */
+  def seek[M[_]: Monad, A:Manifest](i: Int): Iteratee[Rope[A], M, A] = {
+    def step: Input[Rope[A]] => Iteratee[Rope[A], M, A] = {
+      case a@Chunk(h) => if (i < h.size)
+                           Done(h(i), EOF(none))
+                         else Cont(b => step((a:Input[Rope[A]]) |+| b))
+      case EOF(e) => Failure(e getOrElse "EOF", EOF(e))
+    }
+    Cont(step)
   }
 }
