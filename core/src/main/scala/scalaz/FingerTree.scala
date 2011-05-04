@@ -899,6 +899,11 @@ def single[V, A](a: => A)(implicit ms: Reducer[A, V]): FingerTree[V, A] = single
           def apply(from: Rope[_]): Builder[T, Rope[T]] = newBuilder[T]
           def apply: Builder[T, Rope[T]] = newBuilder[T]
         }
+
+      implicit def ropeMonoid[A:ClassManifest]: Monoid[Rope[A]] = new Monoid[Rope[A]] {
+        val zero = Rope.empty[A]
+        def append(a: Rope[A], b: => Rope[A]) = a ++ b
+      }
     }
     
     def rope[A : ClassManifest](v: FingerTreeIntPlus[ImmutableArray[A]]) = new Rope[A](v)
