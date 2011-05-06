@@ -39,3 +39,11 @@ case class Chunk[C](c : C) extends Input[C]
  */
 case class EOF[C](err : Option[Error]) extends Input[C]
 
+
+
+/** This type class is used to construct 'empty' chunks for generic iteratees that require them. */
+trait EmptyChunk[C] {
+  /** Construct an 'empty' chunk */
+  def empty : C
+}
+

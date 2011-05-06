@@ -1,15 +1,83 @@
-package scalaz.io
+package scalaz.nio
 import scalaz._
 import iteratees._
 import Scalaz._
-import java.nio.ByteBuffer
 import collection.mutable.Buffer
+import java.nio.{CharBuffer, ByteBuffer}
+import java.nio.charset.{CoderResult, Charset}
 
 
 /** Iteratee's that read streams of byte buffers and make sense
- * of them. 
+ * of them.
  */
-object ByteBuffers {
+object CharStreams {
+
+  def lamePrinter[M[_] : Monad] : Iteratee[CharBuffer, M, Unit] = {
+    def step(in : Input[CharBuffer]) : Iteratee[CharBuffer,M,Unit] = in match {
+      case Chunk(buf) =>
+       Console.print(buf)
+       Cont(step)
+      case x =>  Done((), x)
+    }
+    Cont(step)
+  }
+
+  /**
+   * Constructs an enumeratee that drives Character streams from ByteBuffer streams.
+   */
+  def charStreamFromByteStream[M[_] : Monad](charset: Charset = Charset.defaultCharset,
+                                   bbuffer: ByteBuffer = ByteBuffer.allocate(8192),
+                                   cbuffer: CharBuffer = CharBuffer.allocate(4096)) = new Enumeratee[ByteBuffer, CharBuffer, M] {
+    private type Result[A] = Iteratee[CharBuffer,M,A]
+    lazy val decoder = charset.newDecoder
+    /**
+     * Lame mutable mechanism to flip buffers and read from the 'stream' buffer into our persistent buffer
+     * for character decoding.
+     */
+    private def fillWithoutOverflow(cur: ByteBuffer, next: ByteBuffer) {
+      cur.flip()
+      if (cur.remaining < next.remaining) {
+        val bytes = new Array[Byte](cur.remaining)
+        next.get(bytes)
+        cur.put(bytes)
+      } else cur.put(next)
+      cur.flip()
+    }
+
+    /**Attempts to read all characters possible out of a byte stream.   Remaining bytes are left in the current
+     * ByteBuffer and passed into the next step function.
+     * Note: When this is done driving the current input, it calls the step function with the left-over state.
+     */
+    @annotation.tailrec
+    private def readAndDrive[A](out : Result[A], current : ByteBuffer, next : Option[ByteBuffer]): Iteratee[ByteBuffer,M, Result[A]] = {
+      next.foreach(fillWithoutOverflow(current,_))
+      cbuffer.rewind()
+      decoder.decode(current, cbuffer, next.isEmpty) match {
+        case CoderResult.OVERFLOW =>
+          cbuffer.flip()
+          readAndDrive(FlattenI(enumInput(Chunk(cbuffer))(out)), current, next)
+        case CoderResult.UNDERFLOW =>
+          cbuffer.flip()
+          val nextI = FlattenI(enumInput(Chunk(cbuffer))(out))
+          if (next.map(_.remaining > 0).getOrElse(false)) readAndDrive(nextI, current, next)
+          else Cont(step(nextI, current))
+        case err =>  iteratees.Failure(err.toString)
+      }
+    }
+    /** Represents a processing step in converting a byte stream to a character stream */
+    private def step[A](cur : Result[A], buf : ByteBuffer)(in : Input[ByteBuffer]) : Iteratee[ByteBuffer, M, Result[A]] =
+      in match {
+        case Chunk(bytebuf) =>
+          readAndDrive(cur, buf, Some(bytebuf))
+        case EOF(Some(msg)) => iteratees.Failure(msg)
+        case EOF(None) =>
+          if(buf.remaining > 0) {
+            FlattenI(enumEof(readAndDrive(cur,buf,None)))
+          } else Done(FlattenI(enumEof(cur)), EOF(None))
+      }
+    def apply[A](i : Iteratee[CharBuffer,M,A]) : Iteratee[ByteBuffer, M, Iteratee[CharBuffer,M,A]] =
+      Cont(step(i, bbuffer))
+  }
 
   // TODO(joshuasuereth): Do we make a mutable bytebuffer monoid for performance?
 //

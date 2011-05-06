@@ -35,6 +35,3 @@ trait Enumeratee[CFrom,CTo, M[_]] {
 trait Nullable[S] {
   def isNull(s : S) : Boolean
 }
-trait EmptyChunk[C] {
-  def empty : C
-}

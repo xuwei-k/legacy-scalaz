@@ -27,7 +27,14 @@ sealed abstract class Iteratee[C,M[_],A](implicit m: Monad[M]) {
               cont: (Input[C] => Iteratee[C,M,A]) => M[R],
               error: (Error, Input[C]) => M[R]
               ): M[R]
-  def mapIteratee[N[_],B](f: M[A] => N[B])(implicit n : Monad[N], s : EmptyChunk[C]) : Iteratee[C,N,B] = error("todo")
+
+  /**
+   * Transforms the computation inside an Iteratee.   This will return a new Iteratee for the monad N and the value B.
+   * Note: That this function uses the run method and is 'unsafe' if the current iterator is not 'done'.
+   */
+  def mapIteratee[N[_],B](f: M[A] => N[B])(implicit n : Monad[N], s : EmptyChunk[C]) : Iteratee[C,N,B] =
+      FlattenI(f(run) map ( (x : B) => Done[C,N,B](x, Chunk(s.empty))))
+
 
   /**Sends an EOF to the stream and tries to extract the value.
    * Note: this can pass errors into the Monad.   If the monad is strict, this can explode.
