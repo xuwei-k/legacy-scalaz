@@ -95,6 +95,8 @@ object Done {
                 cont: (Input[C] => Iteratee[C,M,A]) => M[R],
                 error: (Error, Input[C]) => M[R]
                 ): M[R] = done(a, input)
+
+    override def toString = "Done(" + a + ", " + input + ")"
   }
 }
 
@@ -107,6 +109,7 @@ object Cont {
                 cont: (Input[C] => Iteratee[C,M,A]) => M[R],
                 error: (Error, Input[C]) => M[R]
                 ): M[R] = cont(f)
+    override def toString = "Cont(" + f + ")"
   }
 }
 
@@ -119,6 +122,7 @@ object Failure {
                 cont: (Input[C] => Iteratee[C,M,A]) => M[R],
                 error: (Error, Input[C]) => M[R]
                 ): M[R] = error(err, input)
+    override def toString = "Failure(" + err + ", " + input + ")"
   }
 }
 
@@ -133,5 +137,6 @@ object Failure {
                   error: (Error, Input[C]) => M[R]
                   ): M[R] =
         i.flatMap(x => x.fold(done = done, cont = cont, error = error))
+      override def toString = "Flattened(" + i + ")"
     }
   }

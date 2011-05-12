@@ -48,7 +48,7 @@ final class ScalazProject(info: ProjectInfo) extends ParentProject(info) with Ov
   lazy val io = project("io", "scalaz-io", new Io(_), core)
   lazy val geo = project("geo", "scalaz-geo", new Geo(_), core)
   lazy val http = project("http", "scalaz-http", new Http(_), core)
-  lazy val example = project("example", "scalaz-example", new Example(_), core, geo, http)
+  lazy val example = project("example", "scalaz-example", new Example(_), core, geo, http, io)
   lazy val scalacheckBinding = project("scalacheck-binding", "scalaz-scalacheck-binding", new ScalacheckBinding(_), core)
   lazy val scalacheckGeo = project("geo-scalacheck", "scalaz-geo-scalacheck", new GeoScalacheck(_), core, scalacheckBinding, geo)
   lazy val tests = project("tests", "scalaz-test-suite", new TestSuite(_), core, geo, scalacheckBinding, scalacheckGeo)

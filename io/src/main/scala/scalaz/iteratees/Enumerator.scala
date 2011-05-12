@@ -6,7 +6,7 @@ import Scalaz._
 /** An enumerator is something that takes an iteratee and drives
  * input through it.
  */
-trait Enumerator[C, M[_]] {
+trait Enumerator[C, M[_]] { self =>
   def apply[A](i : Iteratee[C,M,A])(implicit m : Monad[M]) : M[Iteratee[C,M,A]]
 
   /** Combinator for Enumerators.   Will run through the data in this enumerator and then the data in the
@@ -14,7 +14,7 @@ trait Enumerator[C, M[_]] {
    */
   def andThen(e : Enumerator[C,M]) : Enumerator[C,M] = new Enumerator[C,M] {
     def apply[A](i : Iteratee[C,M,A])(implicit m : Monad[M]) : M[Iteratee[C,M,A]] =
-      this(i).flatMap(e.apply)
+      self(i).flatMap(e.apply)
   }
 }
 

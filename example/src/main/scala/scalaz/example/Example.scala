@@ -30,7 +30,7 @@ object Example {
     concurrent.ExampleActor.run
     concurrent.HammerTime.run
     WordCount.wordCount
-    ExampleIteratee.run
+    iteratees.ExampleIteratee.run
   }
 
   def main(args: Array[String]) = run
