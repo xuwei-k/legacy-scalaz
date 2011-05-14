@@ -46,4 +46,13 @@ package object iteratees {
     }
     Cont(step)
   }
+  // TODO - Use typeclass to ignore 'zero' inputs.
+  def head[M[_] : Monad, C]: Iteratee[C, M, Option[C]] = {
+    def step : Input[C] => Iteratee[C,M,Option[C]] = {
+      case i@Chunk(h) => Done(Some(h), i)
+      case EOF(None) => Done(None, EOF(None))
+      case EOF(Some(err)) => Failure(err, EOF(Some(err)))
+    }
+    Cont(step)
+  }
 }

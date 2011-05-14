@@ -34,110 +34,80 @@ object sockets {
         selectableChannel.socket.bind(socketAddr)
         selectableChannel.register(selector, SelectionKey.OP_ACCEPT)
         def apply[A](i : Iteratee[SocketChannel,Promise,A])(implicit m : Monad[Promise]) : Promise[Iteratee[SocketChannel,Promise,A]] = {
-          def nextInput : Input[SocketChannel] = try {
-            // TODO - Use a more FP approach here
-            // TODO - Don't block forever!
-            if (selector.select > 0) {
-              val readyKeys = selector.selectedKeys()
-              val itr = readyKeys.iterator()
-              while (itr.hasNext()) {
-                val key = itr.next().asInstanceOf[SelectionKey]
-                itr.remove();
-                if (key.isAcceptable() ) {
-                  val sschanel = key.channel().asInstanceOf[ServerSocketChannel]
-                  val channel = sschanel.accept();
-                  return Chunk(channel)
-                }
-              }
-            }
-            // If we didn't get a result yet, keep trying
-            nextInput
-          } catch {
-            case ex: java.io.IOException =>
-              EOF(Some(ex.getMessage))
-          }
+          def nextInput : Input[SocketChannel] = getNextValidKey(selector, _.isAcceptable).right.map[SocketChannel]{
+              key =>
+              val sschanel = key.channel.asInstanceOf[ServerSocketChannel]
+              sschanel.accept
+            }.fold(
+              ex => EOF(Some(ex.getMessage)),
+              channel => Chunk(channel)
+            )
           i.fold[Iteratee[SocketChannel,Promise,A]](
-            done = (_,_) => Promise(i),
+            done = (_,_) => {selectableChannel.close(); Promise(i)},
             cont = k => Promise(k(nextInput)).flatMap(apply),
-            error = (_,_) => Promise(i)
+            error = (_,_) => {selectableChannel.close(); Promise(i)}
           )
         }
       })
-}
-
-
-/**
- * A lame implmenetation of a non-blocking server that uses a single thread to select on events and drive an iteratee.
- * @param handler
- *      A function that takes the *output* iteratee (consumer) for a connection and returns the *input* iteratee (consumer)
- *      for the connection.   A simple echo server would just pass the identity function for the handler.
- */
-class NonBlockingServer(port : Int = 4001, handler: Iteratee[ByteBuffer, Identity, Unit] => Iteratee[ByteBuffer, Identity, Unit]) {
-
-  // Creates an iteratee for a SocketChannel that delays all writes to the selector.
-  private def makeWriterIterateeFor(selector: Selector, channel: SocketChannel) : Iteratee[ByteBuffer, Identity, Unit] = {
-    def step(input : Input[ByteBuffer]) : Iteratee[ByteBuffer,Identity,Unit] = input match {
-      case Chunk(buf) if buf.hasRemaining =>
-        // TODO(jsuereth): Defer or store in IO monad?
-        channel.write(buf)
-        Cont(step)
-      case Chunk(_) =>
-        Cont(step)
-      case EOF(_) =>
-        channel.close()
-        Done((), input)
-    }
-    Cont(step)
-  }
-
-  private def handleRead(selector : Selector, channel : SocketChannel, processor : Iteratee[ByteBuffer,Identity,Unit]) : Unit = {
-    // TODO - re-use byte buffers? Configure byte buffers?
-    val buf = ByteBuffer.allocate(1024*8)
-    val input : Input[ByteBuffer] = try {
-      if (channel.read(buf) >=0) {
-        buf.flip()
-        Chunk(buf)
-      } else EOF(None)
-    } catch {
-      case ex : java.io.IOException =>
-        EOF(Some(ex.getMessage))
-    }
-    // If we were using the IO monad, we'd need to run here to drive the iteratee
-    // as we go...   Let's think on this.
-    val next = FlattenI(enumInput(input)(processor))
-    // TODO - Peak at results to figure out if we should be done!
-    channel.register(selector, SelectionKey.OP_READ, () => handleRead(selector, channel, next))
-  }
 
   /**
-   * Handles all I/O events on the current thread.
+   * Constructs an enumerator that can drive a stream processor (Iteratee) with the input form a socket channel.
+   * @param channel The channel to read
+   * @param bufSize  The size of buffer to allocate for reading.   TODO - predicting buffer size  strategy
+   * TODO - Generic Buf typeclass!
+   * @param s The strategy used to execute delayed work.
    */
-  def acceptConnections() {
-    val selector = Selector.open() // TODO - use SelectorProvider?
-    val selectableChannel: ServerSocketChannel = ServerSocketChannel.open()
-    selectableChannel.configureBlocking(false)
-    val socketAddr = new InetSocketAddress(port)
-    selectableChannel.socket.bind(socketAddr)
-    selectableChannel.register(selector, SelectionKey.OP_ACCEPT)
-    while (selector.select() > 0) {
-      val readyKeys = selector.selectedKeys()
-      val i = readyKeys.iterator();
-      while (i.hasNext()) {
-        val key = i.next().asInstanceOf[SelectionKey]
-        i.remove();
-        if (key.isAcceptable() ) {
-          val sschanel = key.channel().asInstanceOf[ServerSocketChannel]
-          val channel = sschanel.accept();
-          channel.configureBlocking( false );
-          val processor = handler(makeWriterIterateeFor(selector, channel))
-          channel.register(selector, SelectionKey.OP_READ, () => handleRead(selector, channel, processor))
-        } else {
-          // TODO - Move these onto a thread pool or some other location.
-          val handler = key.attachment.asInstanceOf[Function0[Unit]]
-          key.interestOps(0)
-          handler.apply()
+  def readSocketChannel(channel : SocketChannel, bufSize : Int = 8*1024)(implicit s : concurrent.Strategy) : IO[Enumerator[ByteBuffer, Promise]] =
+    IO.ioPure.pure(new Enumerator[ByteBuffer, Promise] {
+      val selector = Selector.open()
+      channel.configureBlocking(false)
+      channel.register(selector, SelectionKey.OP_READ)
+      def apply[A](i : Iteratee[ByteBuffer,Promise,A])(implicit m : Monad[Promise]) : Promise[Iteratee[ByteBuffer, Promise, A]] = {
+        def nextInput = getNextValidKey(selector, _.isReadable).right.map[Input[ByteBuffer]] { key =>
+          val buf = ByteBuffer.allocate(bufSize)
+          if (channel.read(buf) >= 0) {
+            buf.flip
+            Chunk(buf)
+          } else EOF(None)
+        }.fold[Input[ByteBuffer]](
+          ex => EOF(Some(ex.getMessage)),
+          identity
+        )
+        i.fold[Iteratee[ByteBuffer,Promise,A]](
+          done = (_,_) => Promise(i),
+          cont = k => Promise(k(nextInput)).flatMap(apply),
+          error = (_,_) => Promise(i)
+        )
+      }
+    })
+
+
+  def writeSocketChannel(channel : SocketChannel, buf : ByteBuffer)  = IO.ioPure.pure(channel.write(buf))
+
+  /** Unsafe helper method:  Calls the selector and looks for the next key with the isValid boolean true.
+   * Note:  This currently removes all keys that *do not* meet the isValid criteria...   This could be bad in the
+   * future...
+   */
+  private def getNextValidKey(selector: Selector, isValid: SelectionKey => Boolean) : Either[Exception, SelectionKey] =
+    try {
+      // TODO - Use a more FP approach here
+      // TODO - Don't block forever!
+      // TODO - Maybe we don't want to remove ready keys because others may own them!
+      if (selector.select > 0) {
+        val readyKeys = selector.selectedKeys()
+        val itr = readyKeys.iterator()
+        while (itr.hasNext()) {
+          val key = itr.next().asInstanceOf[SelectionKey]
+          // TODO - should we only do this if the key is valid?
+          itr.remove()
+          if (isValid(key)) {
+            return Right(key)
+          }
         }
       }
+      // If we didn't get a result yet, keep trying
+      getNextValidKey(selector, isValid)
+    } catch {
+      case ex: java.io.IOException => Left(ex)
     }
-  }
 }
