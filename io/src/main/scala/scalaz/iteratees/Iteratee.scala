@@ -56,6 +56,31 @@ sealed abstract class Iteratee[C,M[_],A](implicit m: Monad[M]) {
   /** If this iteratee fails, try the given iteratee instead. */
   def |(or: Iteratee[C, M, A]): Iteratee[C, M, A] =
     FlattenI(fold((_, _) => this.pure[M], _ => this.pure[M], (e, i) => or.pure[M]))
+
+  /**
+   * Returns a new iteratee that runs this iteratee and the passed in iteratee to completion before
+   * returning done.
+   */
+  def zip[B](other : Iteratee[C,M,B])(implicit m : Monad[M]) : Iteratee[C,M,(A,B)] = {
+    def step(a : Iteratee[C,M,A], b: Iteratee[C,M,B], input : Input[C]) : Iteratee[C,M,(A,B)] = {
+      val a1 = enumInput(input)(a)
+      val b1 = enumInput(input)(b)
+      FlattenI((a1 |@| b1)( (a,b) =>
+        FlattenI(a.fold[Iteratee[C,M,(A,B)]](
+            done = (value, i) => {
+              b.fold[Iteratee[C,M,(A,B)]](
+                error = (msg, input) => Failure(msg, input).pure,
+                done = (value2, i2) => Done((value, value2), input).pure,
+                cont = (k) => Cont[C,M,(A,B)](step(a, b, _)).pure
+              )
+            },
+            cont = (k) =>
+                Cont[C,M,(A,B)](step(a, b, _)).pure,
+            error = (msg, input) => Failure(msg, input).pure
+        ))))
+    }
+    Cont(step(this, other, _))
+  }
 }
 
 object Iteratee {

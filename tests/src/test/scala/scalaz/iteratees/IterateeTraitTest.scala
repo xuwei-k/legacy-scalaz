@@ -9,7 +9,14 @@ class IterateeTraitTest extends Specification with Sugar {
     "ignore eof when done" in {
       val x = 5.pure[({type I[X]=Iteratee[Seq[Int], Identity, X]})#I]
       val y = enumEof(x)
-      y.run must beEqual(5)
+      val result : Int = y.run
+      result must beEqualTo(5)
+    }
+    "coiterate on zip" in {
+      def sizer = readLength[Seq[Int], Identity](_.size)
+      val cosizers = sizer zip sizer
+      val result : (Long, Long) = enumInput(Chunk(Seq(1,2)))(cosizers).run
+      result must beEqualTo((2,2))
     }
   }
 }
