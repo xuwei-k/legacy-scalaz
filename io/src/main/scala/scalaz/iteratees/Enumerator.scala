@@ -9,6 +9,11 @@ import Scalaz._
 trait Enumerator[C, M[_]] { self =>
   def apply[A](i : Iteratee[C,M,A])(implicit m : Monad[M]) : M[Iteratee[C,M,A]]
 
+  /**Operator form of apply.  This is useful when the Iteratee type is known and is driven by a generic
+   * enumerator.
+   */
+  def <<:[A](i : Iteratee[C,M,A])(implicit m : Monad[M]) = apply[A](i)(m)
+
   /** Combinator for Enumerators.   Will run through the data in this enumerator and then the data in the
    *  chained enumerator.
    */
@@ -26,8 +31,8 @@ trait Enumerator[C, M[_]] { self =>
  *  That is, the underlying stream (Iteratee[CFrom, M, _]) for the Enumeratee is exposed in the resulting value from
  *  'driving' the higher level stream (Iteratee[CTo,M,A])
  */
-trait Enumeratee[CFrom,CTo, M[_]] {
-  def apply[A](i : Iteratee[CTo,M,A]) : Iteratee[CFrom, M, Iteratee[CTo,M,A]]
+trait Enumeratee[CFrom,CTo, M[_],A] {
+  def apply(i : Iteratee[CTo,M,A])(implicit m : Monad[M]) : Iteratee[CFrom, M, Iteratee[CTo,M,A]]
 }
 
 

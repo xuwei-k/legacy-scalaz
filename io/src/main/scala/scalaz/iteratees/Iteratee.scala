@@ -40,7 +40,7 @@ sealed abstract class Iteratee[C,M[_],A](implicit m: Monad[M]) {
    * Note: this can pass errors into the Monad.   If the monad is strict, this can explode.
    */
   def run: M[A] = {
-    enumEof[C,M](this).flatMap(_.fold(
+    this <<: enumEof flatMap (_.fold(
       done = (value, _) => value.pure,
       error = (msg, input) => m.pure(error(msg)),
       cont  = (f) => m.pure(error("Divergent Iteratee!"))
@@ -57,14 +57,17 @@ sealed abstract class Iteratee[C,M[_],A](implicit m: Monad[M]) {
   def |(or: Iteratee[C, M, A]): Iteratee[C, M, A] =
     FlattenI(fold((_, _) => this.pure[M], _ => this.pure[M], (e, i) => or.pure[M]))
 
+  /** Combinator to apply an enumerator to this consumer */
+  def >>:(e : Enumerator[C, M]) = e(this)
+
   /**
    * Returns a new iteratee that runs this iteratee and the passed in iteratee to completion before
    * returning done.
    */
   def zip[B](other : Iteratee[C,M,B])(implicit m : Monad[M]) : Iteratee[C,M,(A,B)] = {
     def step(a : Iteratee[C,M,A], b: Iteratee[C,M,B], input : Input[C]) : Iteratee[C,M,(A,B)] = {
-      val a1 = enumInput(input)(a)
-      val b1 = enumInput(input)(b)
+      val a1 = a <<: enumInput(input)
+      val b1 = b <<: enumInput(input)
       FlattenI((a1 |@| b1)( (a,b) =>
         FlattenI(a.fold[Iteratee[C,M,(A,B)]](
             done = (value, i) => {
@@ -94,7 +97,7 @@ object Iteratee {
         FlattenI(
           i.fold[Iteratee[C,M,B]](
             done = (value, input) =>
-              enumInput(input)(f(value)), // Pass the remaining value to the Iteratee.
+              f(value) <<: enumInput(input), // Pass the remaining value to the Iteratee.
             cont = (k) => Cont[C,M,B](in => bind(k(in),f)).pure,
             error = (msg, input) => Failure(msg, input).pure
           )
@@ -154,6 +157,8 @@ object Failure {
 
   /**Flattens an Iteratee inside the Monad M to just be an Iteratee.
    * This works because Iteratees are threaded through the Monad M.
+   *
+   * TODO - Rename to liftI or liftMI or something more MonadT ish.
    */
   object FlattenI {
     def apply[C, M[_]: Monad, A](i: M[Iteratee[C,M,A]]) = new Iteratee[C,M,A] {

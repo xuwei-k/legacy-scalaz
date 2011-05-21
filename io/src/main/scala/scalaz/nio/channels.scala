@@ -22,6 +22,11 @@ object Channels {
       // Helper to read from the channel into the ByteBuffer.
       def readBuf(channel : M[JByteChannel]) : M[(JByteChannel,Input[ByteBuffer])] = channel map { c =>
         buf.rewind()
+        if (buf.limit() == buf.capacity()) {
+          buf.compact();
+          buf.limit(buf.position());
+          buf.position(0);
+        }
         try {
           if(c.read(buf) >= 0) {
             buf.flip()

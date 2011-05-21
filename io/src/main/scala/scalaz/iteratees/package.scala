@@ -27,7 +27,9 @@ package object iteratees {
   }
 
   /** Pulls the length from an enumeratee */
-  def readLength[C,M[_] : Monad]( sizeOfChunk : C => Long): Iteratee[C,M,Long] = {
+  // TODO - We would use Length here, but it requires a higher-kinded type and defaults to 1 for non-higherkinded
+  // types, and therefore does *not* work for java.nio.ByteBuffer...
+  def readLength[C ,M[_] : Monad]( sizeOfChunk : C => Long): Iteratee[C,M,Long] = {
     def step(curSize: Long)(in: Input[C]): Iteratee[C,M,Long] = in match {
       case Chunk(c) => Cont(step(curSize + sizeOfChunk(c)))
       case EOF(Some(err)) => Failure(err, EOF(Some(err)))
