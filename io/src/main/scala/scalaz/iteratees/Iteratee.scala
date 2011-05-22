@@ -33,14 +33,14 @@ sealed abstract class Iteratee[C,M[_],A](implicit m: Monad[M]) {
    * Note: That this function uses the run method and is 'unsafe' if the current iterator is not 'done'.
    */
   def mapIteratee[N[_],B](f: M[A] => N[B])(implicit n : Monad[N], s : EmptyChunk[C]) : Iteratee[C,N,B] =
-      FlattenI(f(run) map ( (x : B) => Done[C,N,B](x, Chunk(s.empty))))
+      FlattenI(f(run) map ( (x : B) => Done[C,N,B](x, EmptyChunk.apply)))
 
 
   /**Sends an EOF to the stream and tries to extract the value.
    * Note: this can pass errors into the Monad.   If the monad is strict, this can explode.
    */
   def run: M[A] = {
-    this <<: enumEof flatMap (_.fold(
+    (this <<: enumEof) flatMap (_.fold[A](
       done = (value, _) => value.pure,
       error = (msg, input) => m.pure(error(msg)),
       cont  = (f) => m.pure(error("Divergent Iteratee!"))
@@ -57,32 +57,29 @@ sealed abstract class Iteratee[C,M[_],A](implicit m: Monad[M]) {
   def |(or: Iteratee[C, M, A]): Iteratee[C, M, A] =
     FlattenI(fold((_, _) => this.pure[M], _ => this.pure[M], (e, i) => or.pure[M]))
 
-  /** Combinator to apply an enumerator to this consumer */
-  def >>:(e : Enumerator[C, M]) = e(this)
-
   /**
    * Returns a new iteratee that runs this iteratee and the passed in iteratee to completion before
    * returning done.
    */
   def zip[B](other : Iteratee[C,M,B])(implicit m : Monad[M]) : Iteratee[C,M,(A,B)] = {
-    def step(a : Iteratee[C,M,A], b: Iteratee[C,M,B], input : Input[C]) : Iteratee[C,M,(A,B)] = {
+    def step(a : Iteratee[C,M,A], b: Iteratee[C,M,B])(input : Input[C]) : Iteratee[C,M,(A,B)] = {
       val a1 = a <<: enumInput(input)
       val b1 = b <<: enumInput(input)
-      FlattenI((a1 |@| b1)( (a,b) =>
-        FlattenI(a.fold[Iteratee[C,M,(A,B)]](
+      FlattenI((a1 |@| b1)( (a2,b2) =>
+        FlattenI(a2.fold[Iteratee[C,M,(A,B)]](
             done = (value, i) => {
-              b.fold[Iteratee[C,M,(A,B)]](
+              b2.fold[Iteratee[C,M,(A,B)]](
                 error = (msg, input) => Failure(msg, input).pure,
                 done = (value2, i2) => Done((value, value2), input).pure,
-                cont = (k) => Cont[C,M,(A,B)](step(a, b, _)).pure
+                cont = (k) => Cont[C,M,(A,B)](step(a2, b2)).pure
               )
             },
             cont = (k) =>
-                Cont[C,M,(A,B)](step(a, b, _)).pure,
+                Cont[C,M,(A,B)](step(a2, b2)).pure,
             error = (msg, input) => Failure(msg, input).pure
         ))))
     }
-    Cont(step(this, other, _))
+    Cont(step(Iteratee.this, other))
   }
 }
 
@@ -137,7 +134,7 @@ object Cont {
                 cont: (Input[C] => Iteratee[C,M,A]) => M[R],
                 error: (Error, Input[C]) => M[R]
                 ): M[R] = cont(f)
-    override def toString = "Cont(" + f + ")"
+    override def toString = "Cont(" + f + "@" + f.## + ")"
   }
 }
 
@@ -166,7 +163,8 @@ object Failure {
                   cont: (Input[C] => Iteratee[C,M,A]) => M[R],
                   error: (Error, Input[C]) => M[R]
                   ): M[R] =
-        i.flatMap(x => x.fold(done = done, cont = cont, error = error))
+        i.flatMap(x =>
+          x.fold(done = done, cont = cont, error = error))
       override def toString = "Flattened(" + i + ")"
     }
   }

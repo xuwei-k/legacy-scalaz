@@ -17,7 +17,7 @@ object Channels {
    * @param channel  The NIO channel to read from.
    * @param buf The buffer to use when reading from the nio channel.   This will be recycled.
    */
-  def enumByteChannel[M[_]](channel : M[JByteChannel], buf : ByteBuffer = ByteBuffer.allocate(8192)) = new Enumerator[ByteBuffer, M] {
+  def enumByteChannel[M[_]](channel : JByteChannel, buf : ByteBuffer = ByteBuffer.allocate(8192)) = new Enumerator[ByteBuffer, M] {
     def apply[A](i : Iteratee[ByteBuffer,M,A])(implicit m : Monad[M]) : M[Iteratee[ByteBuffer,M,A]] = {
       // Helper to read from the channel into the ByteBuffer.
       def readBuf(channel : M[JByteChannel]) : M[(JByteChannel,Input[ByteBuffer])] = channel map { c =>
@@ -53,7 +53,7 @@ object Channels {
               )
           }
         }
-      drive(i, channel)
+      drive(i, channel.pure)
     }
   }
   /** An iteratee that will write to a byte channel */
@@ -64,7 +64,7 @@ object Channels {
       case Chunk(buf) =>
         FlattenI(channel map { c =>
           c.write(buf)
-          Cont(i => step(m.pure(c))(i))
+          Cont(x => step(m.pure(c))(x))
         })
       case EOF(e@Some(err)) => iteratees.Failure(err, EOF(e))
     }

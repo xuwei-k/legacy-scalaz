@@ -8,22 +8,16 @@ package object iteratees {
   type Error = String // TODO -Better error type.
 
   /** An enumerator that just pushes an EOF to the Iteratee */
-  def enumEof[C, M[_]] = new Enumerator[C,M] {
-    def apply[A](i: Iteratee[C,M,A])(implicit m : Monad[M]): M[Iteratee[C,M,A]] =
-      i.fold(
-         cont = (f) => f(EOF[C](None)).pure,
-         done = (value, input) => Done(value,input).pure,
-         error = (msg, input) => Failure(msg, input).pure
-      )
-  }
+  def enumEof[C, M[_]] : Enumerator[C,M] = enumInput(EOF(None))
 
-  def enumInput[C, M[_]](in : Input[C]) = new Enumerator[C,M] {
-    def apply[A](i: Iteratee[C,M,A])(implicit m : Monad[M]): M[Iteratee[C,M,A]] =
+  def enumInput[C, M[_]](in : Input[C]) : Enumerator[C,M] = new Enumerator[C,M] {
+    def apply[A](i: Iteratee[C,M,A])(implicit m : Monad[M]): M[Iteratee[C,M,A]] = {
       i.fold(
         cont = (f) => f(in).pure,
-        done = (value, input) => Done(value, input).pure,
-        error = (msg, input) => Failure(msg, input).pure
+        done = (value, input) => i.pure,
+        error = (msg, input) => i.pure
       )
+    }
   }
 
   /** Pulls the length from an enumeratee */
@@ -56,5 +50,17 @@ package object iteratees {
       case EOF(Some(err)) => Failure(err, EOF(Some(err)))
     }
     Cont(step)
+  }
+
+  def joinI[CFrom : EmptyChunk, CTo, M[_]: Monad, A](iter: Iteratee[CFrom, M, Iteratee[CTo, M, A]]): Iteratee[CFrom, M, A] = {
+    iter flatMap { iter2 => FlattenI(iter2.fold(
+      done = (a, i) => Done(a, EmptyChunk[CFrom]).pure,
+      error = (e,_) => Failure(e, EmptyChunk[CFrom]).pure,
+      cont = k => k(EOF(None)).fold(
+        done = (a, i) => Done(a, EmptyChunk[CFrom]).pure,
+        error = (e, _) => Failure(e, EmptyChunk[CFrom]).pure,
+        cont = k => error("joinI: Divergent iteratee!")
+      )
+    ))}
   }
 }

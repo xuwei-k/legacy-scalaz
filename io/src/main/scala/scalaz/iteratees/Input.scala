@@ -46,4 +46,14 @@ trait EmptyChunk[C] {
   /** Construct an 'empty' chunk */
   def empty : C
 }
+object EmptyChunk {
+  def apply[C](implicit e : EmptyChunk[C]) : Input[C] = Chunk(e.empty)
+
+  implicit object CharBufferEmpty extends EmptyChunk[java.nio.CharBuffer] {
+    def empty = java.nio.CharBuffer.allocate(0)
+  }
+  implicit object ByteBufferEmpty extends EmptyChunk[java.nio.ByteBuffer] {
+    def empty = java.nio.ByteBuffer.allocate(0)
+  }
+}
 
