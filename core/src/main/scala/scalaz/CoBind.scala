@@ -36,6 +36,15 @@ trait CoBinds {
   implicit def EitherCoBind[X]: CoBind[({type λ[α] = Either[X, α]})#λ] =
     coBind[({type λ[α] = Either[X, α]})#λ]
 
+  implicit def Tuple1CoBind: CoBind[Tuple1] =
+    coBind[Tuple1]
+
+  implicit def Tuple2CoBind[R]: CoBind[({type λ[α] = (R, α)})#λ] =
+    coBind[({type λ[α] = (R, α)})#λ]
+
+  implicit def Function0CoBind: CoBind[Function0] =
+    coBind[Function0]
+
   implicit def Function1CoBind[R: Semigroup]: CoBind[({type λ[α] = (R => α)})#λ] =
     coBind[({type λ[α] = (R => α)})#λ]
 
@@ -56,4 +65,18 @@ trait CoBinds {
     def coBind[X, Y](f: CoStateT[A, F, X] => Y) =
       _ cobindT f
   }
+
+  implicit def NonEmptyListCoBind: CoBind[NonEmptyList] =
+    coBind[NonEmptyList]
+
+  implicit def TreeCoBind: CoBind[Tree] =
+    coBind[Tree]
+
+
+  implicit def TreeLocCoBind: CoBind[TreeLoc] =
+    coBind[TreeLoc]
+
+  implicit def ZipperCoBind: CoBind[Zipper] =
+    coBind[Zipper]
+
 }

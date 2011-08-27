@@ -1,7 +1,5 @@
 package scalaz
 
-import java.util.Map.Entry
-
 trait CoMonad[F[_]] {
   val coBind: CoBind[F]
   val coPointed: CoPointed[F]
