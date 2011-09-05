@@ -19,6 +19,9 @@ import collection.SeqLike
 sealed trait Lens[A, B] {
   val run: A => CoState[B, A]
 
+  def apply(a: A): CoState[B, A] =
+    run(a)
+
   import StateT._
   import Lens._
 
@@ -28,9 +31,6 @@ sealed trait Lens[A, B] {
   def get: A => B =
     a =>
       run(a).pos
-
-  def apply(a: A): B =
-    get(a)
 
   def set: A => B => A =
     a =>

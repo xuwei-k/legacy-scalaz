@@ -3,6 +3,9 @@ package scalaz
 sealed trait Kleisli[A, F[_], B] {
   val run: A => F[B]
 
+  def apply(a: A): F[B] =
+    run(a)
+
   import Kleisli._
   import StateT._
   import =~~=._

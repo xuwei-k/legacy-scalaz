@@ -3,6 +3,9 @@ package scalaz
 sealed trait StateT[S, F[_], A] {
   val runT: S => F[(A, S)]
 
+  def apply(s: S): F[(A, S)] =
+    runT(s)
+
   import StateT._
   import WriterT._
   import =~~=._
