@@ -141,7 +141,7 @@ sealed trait Dequeue[A] {
     case _ :: t => Some(t)
   }
 
-  def ::(a: A): Dequeue[A] = new Dequeue[A] {
+  def <::(a: A): Dequeue[A] = new Dequeue[A] {
     val pre = Dequeue.this.pre
     val post = ((xs: List[A]) => a :: xs) :: Dequeue.this.post
   }
@@ -158,22 +158,22 @@ sealed trait Dequeue[A] {
 
   def foldRight[B](b: B, f: (A, B) => B): B = toList.foldRight(b)(f)
 
-  def map[B](f: A => B): Dequeue[B] = foldRight[Dequeue[B]](empty[B], f(_) :: _)
+  def map[B](f: A => B): Dequeue[B] = foldRight[Dequeue[B]](empty[B], f(_) <:: _)
 
   def flatMap[B](f: A => Dequeue[B]): Dequeue[B] = foldRight[Dequeue[B]](empty[B], f(_) ::: _)
 
   def foreach(f: A => Unit): Unit = toList foreach f
 
-  override def toString = 'D' + toList.toString
+  override def toString = "Dequeue(" + toList.toString drop 5
 }
 
 trait Dequeues {
-  def dlist[A](f: List[A] => List[A]): Dequeue[A] = new Dequeue[A] {
+  def dequeue[A](f: List[A] => List[A]): Dequeue[A] = new Dequeue[A] {
     val pre = List(f)
     val post = Nil
   }
 
-  def empty[A]: Dequeue[A] = dlist(identity(_: List[A]))
+  def empty[A]: Dequeue[A] = dequeue(identity(_: List[A]))
 }
 
 object Dequeue extends Dequeues
