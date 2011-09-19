@@ -64,7 +64,7 @@ trait Kleislis {
   type ReaderT[A, F[_], B] = Kleisli[A, F, B]
   type Reader[A, B] = Kleisli[A, Identity, B]
 
-  def kleisli[A, F[_], B](r: A => F[B]): Kleisli[A, F, B] = new Kleisli[A, F, B] {
+  implicit def kleisli[A, F[_], B](r: A => F[B]): Kleisli[A, F, B] = new Kleisli[A, F, B] {
     val run = r
   }
 
