@@ -105,7 +105,7 @@ trait ScalazArbitrarys {
 
   implicit def ArraySeqArbitrary[A](implicit a: Arbitrary[A]): Arbitrary[ArraySeq[A]] = arb[List[A]] ∘ ((x: List[A]) => ArraySeq(x: _*))
 
-  implicit def AltDListArbitrary[A](implicit a: Arbitrary[A]) = Arbitrary {
+  implicit def DequeueArbitrary[A](implicit a: Arbitrary[A]) = Arbitrary {
     Gen.sized(n => listOfN(n, arbitrary[A]) map (xs => xs.foldLeft(Dequeue.empty[A])(_ ::> _)))
   }
 
