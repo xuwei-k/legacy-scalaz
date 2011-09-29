@@ -71,6 +71,12 @@ sealed trait ListW[A] {
     }
   }
 
+  def findM[M[_]: Monad](p: A => M[Boolean]): M[Option[A]] = value match {
+    case Nil => implicitly[Monad[M]].point(None: Option[A])
+    case h::t => implicitly[Monad[M]].bd((b: Boolean) =>
+      if(b) implicitly[Monad[M]].point(Some(h): Option[A]) else t findM p)(p(h))
+  }
+
   def powerset: List[List[A]] = filterM(_ => List(true, false))
 
   def partitionM[M[_] : Monad](p: A => M[Boolean]): M[(List[A], List[A])] = value match {

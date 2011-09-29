@@ -2,7 +2,6 @@ package scalaz.example
 
 import scalaz._
 import Scalaz._
-import collection.immutable.List
 
 object WordCount {
   def main(args: Array[String]) = {

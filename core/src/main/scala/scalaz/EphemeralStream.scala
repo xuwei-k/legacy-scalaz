@@ -55,6 +55,15 @@ sealed trait EphemeralStream[A] {
     def addOne(c: => Int)(a: => A) = 1 + c
     foldLeft(0)(addOne _)
   }
+
+  def findM[M[_]: Monad](p: A => M[Boolean]): M[Option[A]] =
+    if(isEmpty)
+      implicitly[Monad[M]].point(None: Option[A])
+    else {
+      val hh = head()
+      implicitly[Monad[M]].bd((b: Boolean) =>
+      if(b) implicitly[Monad[M]].point(Some(hh): Option[A]) else tail() findM p)(p(hh))
+    }
 }
 
 object EphemeralStream extends EphemeralStreams {
@@ -63,6 +72,9 @@ object EphemeralStream extends EphemeralStreams {
 }
 
 trait EphemeralStreams {
+  type EStream[A] =
+    EphemeralStream[A]
+
   def emptyEphemeralStream[A]: EphemeralStream[A] = new EphemeralStream[A] {
     def isEmpty = true
 
