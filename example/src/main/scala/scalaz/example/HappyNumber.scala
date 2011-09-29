@@ -17,3 +17,24 @@ object HappyNumber {
     List(44L, 51, 193, 194, 204, 203, 208, 356, 362, 365, 487, 488) map happy println
   }
 }
+
+/*
+import Control.Monad.State
+import Control.Monad.TM
+import Data.Char
+import qualified Data.Set as S
+import qualified Data.Foldable as F
+
+happy ::
+  Integer
+  -> Bool
+happy =
+  F.elem 1 .
+  (`evalState` S.empty) .
+  findM (\j -> state $ \s -> (j == 1 || S.member j s, S.insert j s)) .
+  iterate (sum .
+           map (join (*) .
+                toInteger .
+                digitToInt) .
+           show)
+*/
