@@ -4,13 +4,15 @@ import scalaz._
 import Scalaz._
 
 object HappyNumber {
-  type StS =
-    {type λ[α] = State[Set[Long], α]}
+  type StS[A] =
+    State[Set[Long], A]
+
+  val square = ((_: Long) * (_: Long)).curried.μ
 
   val happy =
-    ((_: EStream[Long]).findM[StS#λ](j =>
+    ((_: EStream[Long]).findM[StS](j =>
         state(s => (j == 1 || (s contains j), s + j))) eval Set() element 1) compose (iterate(_: Long)(k =>
-            (k.toString map (((x: Long) => x * x) compose ((_: Char).toLong - 48))) sum))
+            (k.toString map (c => square((c: Char).toLong - 48))) sum))
 
   def main(args: Array[String]) {
     // [true,false,true,false,false,true,true,true,true,true,true,false]
