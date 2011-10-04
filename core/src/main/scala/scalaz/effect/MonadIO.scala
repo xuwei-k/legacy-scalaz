@@ -72,4 +72,11 @@ trait MonadIOs {
     implicit val m = mio.monad
     monadIO[({type λ[α] = RegionT[S, M, α]})#λ]
   }
+
+  implicit def StateTMonadIO[S, M[_]](implicit mio: MonadIO[M]):
+  MonadIO[({type λ[α] = StateT[S, M, α]})#λ] = {
+    implicit val l = mio.liftIO
+    implicit val m = mio.monad
+    monadIO[({type λ[α] = StateT[S, M, α]})#λ]
+  }
 }
