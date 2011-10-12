@@ -28,4 +28,9 @@ trait LiftIOs {
       def liftIO[A] = a => RegionT.regionT(kleisli(_ => lio.liftIO(a)))
     }
   }
+
+  implicit def StateTLiftIO[S, F[_]](implicit lio: LiftIO[F], m: Monad[F]): LiftIO[({type λ[α] = StateT[S, F, α]})#λ] = 
+    new LiftIO[({type λ[α] = StateT[S, F, α]})#λ] {
+      def liftIO[A] = a => implicitly[MonadTrans[({type λ[α[_], β] = StateT[S, α, β]})#λ]].lift(lio.liftIO(a))
+    }
 }
