@@ -53,8 +53,6 @@ trait Equals extends EqualsLow {
 
   implicit def ThrowableEqual: Equal[Throwable] = equalA
 
-  implicit def OrderingEqual: Equal[Ordering] = equalA
-
   implicit def StringEqual: Equal[String] = equalA
 
   implicit def SymbolEqual: Equal[Symbol] = equalA
