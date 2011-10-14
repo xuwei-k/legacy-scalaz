@@ -124,13 +124,31 @@ trait *[A] {
     s.show(value)
 
   def shows(implicit s: Show[A]): String =
-    s.show(value).mkString
+    s.shows(value)
 
   def print(implicit s: Show[A]): Unit =
-    Console.print(shows)
+    Predef.print(shows)
 
   def println(implicit s: Show[A]): Unit =
-    Console.println(shows)
+    Predef.println(shows)
+
+  def writeFile(f: String)(implicit s: Show[A]): Unit = {
+    val o = new java.io.FileWriter(f)
+    try {
+      o.write(shows)
+    } finally {
+      o.close
+    }
+  }
+
+  def appendFile(f: String)(implicit s: Show[A]): Unit = {
+    val o = new java.io.FileWriter(f, true)
+    try {
+      o.write(shows)
+    } finally {
+      o.close
+    }
+  }
 
   def mapply[F[_], B](f: F[A => B])(implicit ftr: Functor[F]): F[B] =
     ftr.fmap((ff: A => B) => ff(value))(f)
