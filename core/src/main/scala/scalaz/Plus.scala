@@ -28,4 +28,20 @@ trait Pluss {
     def plus[A](a1: Stream[A], a2: => Stream[A]) =
       a1 #::: a2
   }
+  
+  implicit def StateTPlus[A, F[_]](implicit p: Plus[F]): Plus[({type λ[α] = StateT[A, F, α]})#λ] = new Plus[({type λ[α] = StateT[A, F, α]})#λ] {
+    def plus[B](a1: StateT[A, F, B], a2: => StateT[A, F, B]) = 
+      StateT(s => p.plus(a1 runT s, a2 runT s))
+  }
+  
+  implicit def KleisliPlus[A, F[_]](implicit p: Plus[F]): Plus[({type λ[α] = Kleisli[A, F, α]})#λ] = new Plus[({type λ[α] = Kleisli[A, F, α]})#λ] {
+    def plus[B](a1: Kleisli[A, F, B], a2: => Kleisli[A, F, B]) =
+      Kleisli(s => p.plus(a1 run s, a2 run s))
+  }
+  
+  implicit def OptionTPlus[F[_]](implicit m: Monad[F]): Plus[({type λ[α] = OptionT[F, α]})#λ] = new Plus[({type λ[α] = OptionT[F, α]})#λ] {
+    def plus[B](a1: OptionT[F, B], a2: => OptionT[F, B]) = {
+      OptionT((m.bd((o: Option[B]) => o.map(_ => m.point(o)) getOrElse(a2.runT)))(a1.runT))
+    }
+  }
 }
