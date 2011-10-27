@@ -130,10 +130,10 @@ trait ScalazPropertys {
 
   object Lens {
     def identity[A: Arbitrary : Equal, B](k: Lens[A, B]) =
-      forAll((a: A) => k.set(a)(k(a)) === a)
+      forAll((a: A) => k.set(a)(k get a) === a)
 
     def retention[A : Arbitrary, B: Arbitrary : Equal](k: Lens[A, B]) =
-      forAll((a: A, b: B) => k(k.set(a)(b)) === b)
+      forAll((a: A, b: B) => (k get k.set(a)(b)) === b)
 
     def doubleSet[A : Arbitrary : Equal, B: Arbitrary](k: Lens[A, B]) =
       forAll((a: A, b1: B, b2: B) => k.set(k.set(a)(b1))(b2) === k.set(a)(b2))
