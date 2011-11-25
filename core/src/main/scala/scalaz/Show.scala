@@ -201,12 +201,9 @@ trait Shows {
   }
 
   implicit def OptionShow[A: Show]: Show[Option[A]] = shows(_ map (implicitly[Show[A]].shows(_)) toString)
-
+  
   implicit def EitherShow[A: Show, B: Show]: Show[Either[A, B]] =
-    shows(_.fold(
-      implicitly[Show[A]].shows(_)
-      , implicitly[Show[B]].shows(_)
-    ).toString)
+    shows(_.left.map(implicitly[Show[A]].shows(_)).right.map(implicitly[Show[B]].shows(_)).toString)
 
   implicit def MapShow[CC[K, V] <: collection.Map[K, V], A: Show, B: Show]: Show[CC[A, B]] = i[Show[Iterable[(A, B)]]] contramap (z => z)
 
