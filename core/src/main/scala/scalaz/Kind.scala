@@ -388,8 +388,8 @@ trait *->*[F[_], A] {
    *
    * Example:
    *
-   *  (1.some ⊛ 2.some) apply { (a, b, c) => a + b + c) } === Some(3)
-   *  (1.some ⊛ 2.some ⊛ 3.some) tupled === Some((1, 2, 3))
+   *  (1.some |@| 2.some |@| 3.some) apply { (a, b, c) => a + b + c) } === Some(3)
+   *  (1.some |@| 2.some |@| 3.some) tupled === Some((1, 2, 3))
    *
    * @return An ApplicativeBuilder that has accumulated `value: *->*[A]` and `b: *->*[B]`.
    */
