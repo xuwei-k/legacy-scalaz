@@ -92,7 +92,7 @@ object build extends Build {
     id = "scalaz",
     base = file("."),
     settings = standardSettings ++ Unidoc.settings,
-    aggregate = Seq(core, concurrent, effect, example, iterv, iteratee, scalacheckBinding, tests, typelevel, xml)
+    aggregate = Seq(core, concurrent, effect, example, iterv, iteratee, parse, scalacheckBinding, tests, typelevel, xml)
   )
 
   lazy val core = Project(
@@ -144,6 +144,18 @@ object build extends Build {
     ),
     dependencies = Seq(effect)
   )
+
+  lazy val parse = Project(
+    id = "parse",
+    base = file("parse"),
+    settings = standardSettings ++ Seq[Sett](
+      name := "scalaz-parse",
+      initialCommands in console := "import scalaz.parse._; import base._; import plain._; import Parser._; import ParserTest._;"
+
+    ),
+    dependencies = Seq(core)
+  )
+
 
   lazy val typelevel = Project(
     id = "typelevel",
