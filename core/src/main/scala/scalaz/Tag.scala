@@ -7,4 +7,5 @@ object Tag {
   def subst[A, F[_], T](fa: F[A]): F[A @@ T] = fa.asInstanceOf[F[A @@ T]]
 
   def unsubst[A, F[_], T](fa: F[A @@ T]): F[A] = fa.asInstanceOf[F[A]]
+  def unsubstT[A[_], F[_], T](fa: F[A[_] @@ T]): F[A[_]] = fa.asInstanceOf[F[A[_]]]
 }
