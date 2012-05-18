@@ -101,7 +101,7 @@ trait HuttonMeijerFunctions {
         op <- Monad[Parser].pure(op)
       } yield op
     }
-    Foldable[List].foldR1(start)(a => b => +++(a, b)).getOrElse(sys.error("bla"))
+    Foldable[List].foldr1(start)((a, b) => +++(a, b)).getOrElse(sys.error("bla"))
   }
 
   def bracket[A, B, C](open: Parser[A], pb: Parser[B], close: Parser[C]): Parser[B] = {

@@ -23,7 +23,7 @@ abstract class Parser[S, T, E, A] {
   def flatMap[B](f: (A) => Parser[S, T, E, B]): Parser[S, T, E, B] = Parser((st, inp) => this(st, inp) match {
     case Right(res) =>
       val applied = res.map { case (v, st, out) => applyParser(f(v), st, out) }
-      Foldable[List].foldR(applied, Right(Nil): ParseResult[S, T, E, B])((joinResults[S, T, E, B] _).curried)
+      Foldable[List].foldr(applied, Right(Nil): ParseResult[S, T, E, B])((joinResults[S, T, E, B] _).curried)
     case Left(err) => Left(err)
   })
 
@@ -150,7 +150,7 @@ def token[S, T, E, P](t: T)(implicit E: Equal[T], M: MonadPlus[({type λ[α]=Par
         _ <- p
       } yield op
 
-    Foldable[List].foldR1(opped)((+++[S, T, E, B] _).curried)
+    Foldable[List].foldr1(opped)(+++[S, T, E, B](_, _))
   }
 
   def bracket[S, T, E, OPEN, A, CLOSE, P](open: Parser[S, T, E, OPEN], p: Parser[S, T, E, A], close: Parser[S, T, E, CLOSE]): Parser[S, T, E, A] = {
