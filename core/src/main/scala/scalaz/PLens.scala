@@ -38,19 +38,19 @@ sealed trait PLensT[F[+_], A, B] {
   def kleisli: Kleisli[({type λ[+α] = OptionT[F, α]})#λ, A, Costate[B, A]] =
     Kleisli[({type λ[+α] = OptionT[F, α]})#λ, A, Costate[B, A]](runO(_))
 
-  def mapC[C](f: Costate[B, A] => Costate[C, A])(implicit FF: Functor[F]): PLensT[F, A, C] =
-    plensT(a => FF.map(run(a))(_ map f))
+  def mapC[C](f: Costate[B, A] => Costate[C, A])(implicit F: Functor[F]): PLensT[F, A, C] =
+    plensT(a => F.map(run(a))(_ map f))
 
-  def xmapA[X](f: A => X, g: X => A)(implicit FF: Functor[F]): PLensT[F, X, B] =
+  def xmapA[X](f: A => X, g: X => A)(implicit F: Functor[F]): PLensT[F, X, B] =
     plensO(x => runO(g(x)) map (_ map (f)))
 
-  def xmapbA[X](b: Bijection[A, X])(implicit FF: Functor[F]): PLensT[F, X, B] =
+  def xmapbA[X](b: Bijection[A, X])(implicit F: Functor[F]): PLensT[F, X, B] =
     xmapA(b to _, b from _)
 
-  def xmapB[X](f: B => X, g: X => B)(implicit FF: Functor[F]): PLensT[F, A, X] =
+  def xmapB[X](f: B => X, g: X => B)(implicit F: Functor[F]): PLensT[F, A, X] =
     plensO(a => runO(a) map (_ xmap (f, g)))
 
-  def xmapbB[X](b: Bijection[B, X])(implicit FF: Functor[F]): PLensT[F, A, X] =
+  def xmapbB[X](b: Bijection[B, X])(implicit F: Functor[F]): PLensT[F, A, X] =
     xmapB(b to _, b from _)
 
   def get(a: A)(implicit F: Functor[F]): F[Option[B]] =
@@ -192,16 +192,16 @@ sealed trait PLensT[F[+_], A, B] {
   def >=>[C](that: PLensT[F, B, C])(implicit FF: Monad[F]): PLensT[F, A, C] = andThen(that)
 
   /** Two lenses that view a value of the same type can be joined */
-  def sum[C](that: => PLensT[F, C, B])(implicit FF: Functor[F]): PLensT[F, Either[A, C], B] =
+  def sum[C](that: => PLensT[F, C, B])(implicit F: Functor[F]): PLensT[F, Either[A, C], B] =
     plensT{
       case Left(a) =>
-        FF.map(run(a))(_ map (_ map (Left(_))))
+        F.map(run(a))(_ map (_ map (Left(_))))
       case Right(c) =>
-        FF.map(that run c)(_ map (_ map (Right(_))))
+        F.map(that run c)(_ map (_ map (Right(_))))
     }
 
   /** Alias for `sum` */
-  def |||[C](that: => PLensT[F, C, B])(implicit FF: Functor[F]): PLensT[F, Either[A, C], B] = sum(that)
+  def |||[C](that: => PLensT[F, C, B])(implicit F: Functor[F]): PLensT[F, Either[A, C], B] = sum(that)
 
   /** Two disjoint lenses can be paired */
   def product[C, D](that: PLensT[F, C, D])(implicit FF: Apply[F]): PLensT[F, (A, C), (B, D)] =
@@ -511,15 +511,15 @@ trait PLensTInstances extends PLensTInstance0 {
   implicit def PLensState[F[+_], A, B](plens: PLensT[F, A, B])(implicit F: Functor[F]): PStateT[F, A, B] =
     plens.st
 
-  implicit def PLensTUnzip[F[+_], S](implicit FF: Functor[F]): Unzip[({type λ[α] = PLensT[F, S, α]})#λ] =
+  implicit def PLensTUnzip[F[+_], S](implicit F: Functor[F]): Unzip[({type λ[α] = PLensT[F, S, α]})#λ] =
     new Unzip[({type λ[α] = PLensT[F, S, α]})#λ] {
       def unzip[A, B](a: PLensT[F, S, (A, B)]) =
         (
-          PLensT(x => FF.map(a run x)(_ map (c => {
+          PLensT(x => F.map(a run x)(_ map (c => {
             val (p, q) = c.pos
             Costate(a => c.put((a, q)): S, p)
           })))
-          , PLensT(x => FF.map(a run x)(_ map (c => {
+          , PLensT(x => F.map(a run x)(_ map (c => {
           val (p, q) = c.pos
           Costate(a => c.put((p, a)): S, q)
         })))

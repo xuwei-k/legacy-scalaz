@@ -26,16 +26,16 @@ sealed trait LensT[F[+_], A, B] {
   import BijectionT._
   import WriterT._
 
-  def xmapA[X](f: A => X, g: X => A)(implicit FF: Functor[F]): LensT[F, X, B] =
-    lensT(x => FF.map(run(g(x)))(_ map (f)))
+  def xmapA[X](f: A => X, g: X => A)(implicit F: Functor[F]): LensT[F, X, B] =
+    lensT(x => F.map(run(g(x)))(_ map (f)))
 
-  def xmapbA[X](b: Bijection[A, X])(implicit FF: Functor[F]): LensT[F, X, B] =
+  def xmapbA[X](b: Bijection[A, X])(implicit F: Functor[F]): LensT[F, X, B] =
     xmapA(b to _, b from _)
 
-  def xmapB[X](f: B => X, g: X => B)(implicit FF: Functor[F]): LensT[F, A, X] =
-    lensT(a => FF.map(run(a))(_ xmap (f, g)))
+  def xmapB[X](f: B => X, g: X => B)(implicit F: Functor[F]): LensT[F, A, X] =
+    lensT(a => F.map(run(a))(_ xmap (f, g)))
 
-  def xmapbB[X](b: Bijection[B, X])(implicit FF: Functor[F]): LensT[F, A, X] =
+  def xmapbB[X](b: Bijection[B, X])(implicit F: Functor[F]): LensT[F, A, X] =
     xmapB(b to _, b from _)
 
   def get(a: A)(implicit F: Functor[F]): F[B] =
@@ -63,9 +63,9 @@ sealed trait LensT[F[+_], A, B] {
   def =>>=[X[_]](f: B => X[B])(implicit F: Functor[F], XF: Functor[X]): A => F[X[A]] =
     modf(f, _)
 
-  def %=(f: B => B)(implicit FF: Functor[F]): StateT[F, A, B] =
+  def %=(f: B => B)(implicit F: Functor[F]): StateT[F, A, B] =
     StateT(a =>
-      FF.map(run(a))(c => {
+      F.map(run(a))(c => {
         val b = f(c.pos)
         (c put b, b)
       }))
@@ -93,45 +93,45 @@ sealed trait LensT[F[+_], A, B] {
     >>-(_ => f)
 
   /** Lenses can be composed */
-  def compose[C](that: LensT[F, C, A])(implicit FF: Bind[F]): LensT[F, C, B] =
+  def compose[C](that: LensT[F, C, A])(implicit F: Bind[F]): LensT[F, C, B] =
     lensT(c =>
-      FF.bind(that run c)(x => {
+      F.bind(that run c)(x => {
         val (ac, a) = x.run
-        FF.map(run(a))(y => {
+        F.map(run(a))(y => {
           val (ba, b) = y.run
           Costate(ac compose ba, b)
         })
       }))
 
   /** alias for `compose` */
-  def <=<[C](that: LensT[F, C, A])(implicit FF: Bind[F]): LensT[F, C, B] = compose(that)
+  def <=<[C](that: LensT[F, C, A])(implicit F: Bind[F]): LensT[F, C, B] = compose(that)
 
-  def andThen[C](that: LensT[F, B, C])(implicit FF: Bind[F]): LensT[F, A, C] =
+  def andThen[C](that: LensT[F, B, C])(implicit F: Bind[F]): LensT[F, A, C] =
     that compose this
 
   /** alias for `andThen` */
-  def >=>[C](that: LensT[F, B, C])(implicit FF: Bind[F]): LensT[F, A, C] = andThen(that)
+  def >=>[C](that: LensT[F, B, C])(implicit F: Bind[F]): LensT[F, A, C] = andThen(that)
 
   /** Two lenses that view a value of the same type can be joined */
-  def sum[C](that: => LensT[F, C, B])(implicit FF: Functor[F]): LensT[F, Either[A, C], B] =
+  def sum[C](that: => LensT[F, C, B])(implicit F: Functor[F]): LensT[F, Either[A, C], B] =
     lensT{
       case Left(a) =>
-        FF.map(run(a))(_ map (Left(_)))
+        F.map(run(a))(_ map (Left(_)))
       case Right(c) =>
-        FF.map(that run c)(_ map (Right(_)))
+        F.map(that run c)(_ map (Right(_)))
     }
 
   /** Alias for `sum` */
-  def |||[C](that: => LensT[F, C, B])(implicit FF: Functor[F]): LensT[F, Either[A, C], B] = sum(that)
+  def |||[C](that: => LensT[F, C, B])(implicit F: Functor[F]): LensT[F, Either[A, C], B] = sum(that)
 
   /** Two disjoint lenses can be paired */
-  def product[C, D](that: LensT[F, C, D])(implicit FF: Apply[F]): LensT[F, (A, C), (B, D)] =
+  def product[C, D](that: LensT[F, C, D])(implicit F: Apply[F]): LensT[F, (A, C), (B, D)] =
     lensT {
-      case (a, c) => FF.map2(run(a), that run c)((x, y) => x *** y)
+      case (a, c) => F.map2(run(a), that run c)((x, y) => x *** y)
     }
 
   /** alias for `product` */
-  def ***[C, D](that: LensT[F, C, D])(implicit FF: Apply[F]): LensT[F, (A, C), (B, D)] = product(that)
+  def ***[C, D](that: LensT[F, C, D])(implicit F: Apply[F]): LensT[F, (A, C), (B, D)] = product(that)
 
   trait LensLaw {
     def identity(a: A)(implicit A: Equal[A], ev: F[Costate[B, A]] =:= Id[Costate[B, A]]): Boolean = {
@@ -172,8 +172,8 @@ trait LensTFunctions {
   def lens[A, B](r: A => Costate[B, A]): Lens[A, B] =
     lensT[Id, A, B](r)
 
-  def lensp[F[+_], A, B](r: A => Costate[B, A])(implicit PF: Pointed[F]): LensT[F, A, B] =
-    lensT(a => PF.point(r(a)))
+  def lensp[F[+_], A, B](r: A => Costate[B, A])(implicit F: Pointed[F]): LensT[F, A, B] =
+    lensT(a => F.point(r(a)))
 
   def lensgT[F[+_], A, B](set: A => F[B => A], get: A => F[B])(implicit M: Bind[F]): LensT[F, A, B] =
     lensT(a => M.map2(set(a), get(a))(Costate(_, _)))
@@ -185,11 +185,11 @@ trait LensTFunctions {
     lensg(set.curried, get)
 
   /** The identity lens for a given object */
-  def lensId[F[+_], A](implicit PF: Pointed[F]): LensT[F, A, A] =
+  def lensId[F[+_], A](implicit P: Pointed[F]): LensT[F, A, A] =
     lensp(Costate(identity, _))
 
   /** The trivial lens that can retrieve Unit from anything */
-  def trivialLens[F[+_], A](implicit PF: Pointed[F]): LensT[F, A, Unit] =
+  def trivialLens[F[+_], A](implicit P: Pointed[F]): LensT[F, A, Unit] =
     lensp[F, A, Unit](a => Costate(_ => a, ()))
 
   /** A lens that discards the choice of Right or Left from Either */
@@ -270,18 +270,18 @@ trait LensTInstances {
   }
 
   /** Lenses may be used implicitly as State monadic actions that get the viewed portion of the state */
-  implicit def LensState[F[+_], A, B](lens: LensT[F, A, B])(implicit FF: Functor[F]): StateT[F, A, B] =
+  implicit def LensState[F[+_], A, B](lens: LensT[F, A, B])(implicit F: Functor[F]): StateT[F, A, B] =
     lens.st
 
-  implicit def LensTUnzip[F[+_], S](implicit FF: Functor[F]): Unzip[({type λ[α] = LensT[F, S, α]})#λ] =
+  implicit def LensTUnzip[F[+_], S](implicit F: Functor[F]): Unzip[({type λ[α] = LensT[F, S, α]})#λ] =
     new Unzip[({type λ[α] = LensT[F, S, α]})#λ] {
       def unzip[A, B](a: LensT[F, S, (A, B)]) =
         (
-          LensT(x => FF.map(a run x)(c => {
+          LensT(x => F.map(a run x)(c => {
             val (p, q) = c.pos
             Costate(a => c.put((a, q)): S, p)
           }))
-          , LensT(x => FF.map(a run x)(c => {
+          , LensT(x => F.map(a run x)(c => {
           val (p, q) = c.pos
           Costate(a => c.put((p, a)): S, q)
         }))
