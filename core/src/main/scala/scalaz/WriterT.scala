@@ -245,12 +245,12 @@ trait WriterTFunctions {
 
   def writerWL[F[+_], W, A](implicit MF: Pointed[F]): LensT[F, WriterT[F, W, A], W] =
     LensT(x => MF.map(x.run) {
-      case (w, a) => error("") // todo Costate((ww: W) => MG.point(WriterT(MF.point(ww, a))), w)
+      case (w, a) => Costate((ww: W) => WriterT(MF.point(ww, a)), w)
     })
 
   def writerAL[F[+_], W, A](implicit MF: Pointed[F]): LensT[F, WriterT[F, W, A], A] =
     LensT(x => MF.map(x.run) {
-      case (w, a) => error("") // todo Costate((aa: A) => MG.point(WriterT(MF.point(w, aa))), a)
+      case (w, a) => Costate((aa: A) => WriterT(MF.point(w, aa)), a)
     })
 
 }

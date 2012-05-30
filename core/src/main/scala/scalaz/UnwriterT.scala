@@ -156,12 +156,12 @@ trait UnwriterTFunctions {
 
   def unwriterUL[F[+_], W, A](implicit MF: Pointed[F]): LensT[F, UnwriterT[F, W, A], W] =
     LensT(x => MF.map(x.run) {
-      case (w, a) => error("") // todo Costate((ww: W) => MG.point(UnwriterT(MF.point(ww, a))), w)
+      case (w, a) => Costate((ww: W) => UnwriterT(MF.point(ww, a)), w)
     })
 
   def unwriterAL[F[+_], W, A](implicit MF: Pointed[F]): LensT[F, UnwriterT[F, W, A], A] =
     LensT(x => MF.map(x.run) {
-      case (w, a) => error("") // todo Costate((aa: A) => MG.point(UnwriterT(MF.point(w, aa))), a)
+      case (w, a) => Costate((aa: A) => UnwriterT(MF.point(w, aa)), a)
     })
 
 }
