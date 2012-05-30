@@ -99,7 +99,7 @@ sealed trait LensT[F[+_], A, B] {
         val (ac, a) = x.run
         FF.map(run(a))(y => {
           val (ba, b) = y.run
-          error("") // todo Costate(x => (ba(x))(ac), b)
+          Costate(ac compose ba, b)
         })
       }))
 
@@ -116,9 +116,9 @@ sealed trait LensT[F[+_], A, B] {
   def sum[C](that: => LensT[F, C, B])(implicit FF: Functor[F]): LensT[F, Either[A, C], B] =
     lensT{
       case Left(a) =>
-        error("") // todo FF.map(run(a))(_ map (GF.map(_)(Left(_))))
+        FF.map(run(a))(_ map (Left(_)))
       case Right(c) =>
-        error("") // todo FF.map(that run c)(_ map (GF.map(_)(Right(_))))
+        FF.map(that run c)(_ map (Right(_)))
     }
 
   /** Alias for `sum` */
@@ -127,10 +127,7 @@ sealed trait LensT[F[+_], A, B] {
   /** Two disjoint lenses can be paired */
   def product[C, D](that: LensT[F, C, D])(implicit FF: Apply[F]): LensT[F, (A, C), (B, D)] =
     lensT {
-      case (a, c) => FF.map2(run(a), that run c)((x, y) =>
-        x *** y map {
-          case (q, r) => error("") // todo GG.map2(q, r)((i, j) => (i, j))
-        })
+      case (a, c) => FF.map2(run(a), that run c)((x, y) => x *** y)
     }
 
   /** alias for `product` */
@@ -240,7 +237,7 @@ trait LensTFunctions {
     lensT[Id, A, B](r)
 
   def lensp[F[+_], A, B](r: A => Costate[B, A])(implicit PF: Pointed[F]): LensT[F, A, B] =
-    error("") // todo lensT(a => PF.point(r(a)map (PG.point(_))))
+    lensT(a => PF.point(r(a)))
 
   def lensgT[F[+_], A, B](set: A => F[B => A], get: A => F[B])(implicit M: Bind[F]): LensT[F, A, B] =
     lensT(a => M.map2(set(a), get(a))(Costate(_, _)))
