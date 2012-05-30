@@ -314,9 +314,6 @@ trait LensTFunctions {
       })
     }
 
-  def lensSetJoin[F[+_], A, B](lens: LensT[F, A, B], b: B, a: A)(implicit F: Bind[F]): F[A] =
-    error("") // F.bind(lens run a)(_ put b)
-
 }
 
 trait LensTInstances0 {
