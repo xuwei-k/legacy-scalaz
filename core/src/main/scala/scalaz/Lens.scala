@@ -27,7 +27,7 @@ sealed trait LensT[F[+_], A, B] {
   import WriterT._
 
   def xmapA[X](f: A => X, g: X => A)(implicit FF: Functor[F]): LensT[F, X, B] =
-    lensT(x => FF.map(run(g(x)))(_ map (GF.map(_)(f))))
+    lensT(x => FF.map(run(g(x)))(_ map (f)))
 
   def xmapbA[X](b: Bijection[A, X])(implicit FF: Functor[F]): LensT[F, X, B] =
     xmapA(b to _, b from _)
@@ -99,7 +99,7 @@ sealed trait LensT[F[+_], A, B] {
         val (ac, a) = x.run
         FF.map(run(a))(y => {
           val (ba, b) = y.run
-          Costate(x => GF.bind(ba(x))(ac), b)
+          Costate(x => (ba(x))(ac), b)
         })
       }))
 
