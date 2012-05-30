@@ -54,7 +54,7 @@ sealed trait PLensT[F[+_], A, B] {
     xmapB(b to _, b from _)
 
   def lift[X[+_]](implicit P: Pointed[X], FF: Functor[F]): PLensT[({type λ[+α] = F[X[α]]})#λ, A, B] =
-    plensT[({type λ[+α] = F[X[α]]})#λ, ({type λ[+α] = G[X[α]]})#λ, A, B](a => FF.map(run(a))(c => P.point(c map (_ map (GF.map(_)(P.point(_)))))))
+    error("") // plensT[({type λ[+α] = F[X[α]]})#λ, A, B](a => FF.map(run(a))(c => P.point(c map (_ map (GF.map(_)(P.point(_)))))))
 
   def get(a: A)(implicit F: Functor[F]): F[Option[B]] =
     F.map(run(a))(_ map (_.pos))
@@ -124,7 +124,7 @@ sealed trait PLensT[F[+_], A, B] {
   def option(implicit M: Pointed[F]): PLensT[F, Option[A], B] =
     plensT {
       case None => M.point(None)
-      case Some(w) => M.map(run(w))(_ map (_ map (GF.map(_)(Some(_)))))
+      case Some(w) => error("") // M.map(run(w))(_ map (_ map (GF.map(_)(Some(_)))))
     }
 
   /** An alias for `option`. */
@@ -135,7 +135,7 @@ sealed trait PLensT[F[+_], A, B] {
   def mod(f: B => B, a: A)(implicit F: Functor[F]): F[A] =
     F.map(run(a)){
       case None => a
-      case Some(w) => ev.subst[Id](w puts f)
+      case Some(w) => error("") // todo ev.subst[Id](w puts f)
     }
 
   def =>=(f: B => B)(implicit F: Functor[F]): A => F[A] =
@@ -149,7 +149,7 @@ sealed trait PLensT[F[+_], A, B] {
       case None => (a, None)
       case Some(w) => {
         val r = f(w.pos)
-        (ev.subst[Id](w put r), Some(r))
+        error("") // todo (ev.subst[Id](w put r), Some(r))
       }
     }))
 
@@ -165,7 +165,7 @@ sealed trait PLensT[F[+_], A, B] {
       case None => (a, None)
       case Some(w) => {
         val r = s.run(w.pos): (B, C)
-        (ev.subst[Id](w put r._1), Some(r._2))
+        error("") // todo (ev.subst[Id](w put r._1), Some(r._2))
       }
     }))
 
@@ -191,7 +191,7 @@ sealed trait PLensT[F[+_], A, B] {
         val (ac, a) = x.run
         runO(a) map (y => {
           val (ba, b) = y.run
-          Costate(x => GF.bind(ba(x))(ac), b)
+          error("") // todo Costate(x => GF.bind(ba(x))(ac), b)
         })
       }))
 
@@ -208,9 +208,9 @@ sealed trait PLensT[F[+_], A, B] {
   def sum[C](that: => PLensT[F, C, B])(implicit FF: Functor[F]): PLensT[F, Either[A, C], B] =
     plensT{
       case Left(a) =>
-        FF.map(run(a))(_ map (_ map (GF.map(_)(Left(_)))))
+        error("") // todo FF.map(run(a))(_ map (_ map (GF.map(_)(Left(_)))))
       case Right(c) =>
-        FF.map(that run c)(_ map (_ map (GF.map(_)(Right(_)))))
+        error("") // todo FF.map(that run c)(_ map (_ map (GF.map(_)(Right(_)))))
     }
 
   /** Alias for `sum` */
@@ -224,7 +224,7 @@ sealed trait PLensT[F[+_], A, B] {
           q <- x
           r <- y
         } yield q *** r map {
-          case (s, t) => GG.map2(s, t)((i, j) => (i, j))
+          case (s, t) => error("") // todo GG.map2(s, t)((i, j) => (i, j))
         })
     }
 
@@ -251,10 +251,10 @@ trait PLensTFunctions extends PLensTInstances {
     plensT(a => r(a).run)
 
   def plens[A, B](r: A => Option[Costate[B, A]]): PLens[A, B] =
-    plensT[Id, Id, A, B](r)
+    plensT[Id, A, B](r)
 
   def plensp[F[+_], A, B](r: A => Option[Costate[B, A]])(implicit PF: Pointed[F]): PLensT[F, A, B] =
-    plensT(a => PF.point(r(a) map (_ map  (PG.point(_)))))
+    error("") // todo plensT(a => PF.point(r(a) map (_ map  (PG.point(_)))))
 
   def plensgT[F[+_], A, B](set: A => F[Option[B => A]], get: A => F[Option[B]])(implicit M: Bind[F]): PLensT[F, A, B] =
     plensT(a => M.map2(set(a), get(a))((q, r) => for {
@@ -266,7 +266,7 @@ trait PLensTFunctions extends PLensTInstances {
     plensgT(a => set(a).run, a => get(a).run)
 
   def plensg[A, B](set: A => Option[B => A], get: A => Option[B]): PLens[A, B] =
-    plensgT[Id, Id, A, B](set, get)
+    plensgT[Id, A, B](set, get)
 
   /** The identity partial lens for a given object */
   def plensId[F[+_], A](implicit FF: Pointed[F]): PLensT[F, A, A] =

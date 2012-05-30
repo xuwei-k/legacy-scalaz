@@ -99,7 +99,7 @@ sealed trait LensT[F[+_], A, B] {
         val (ac, a) = x.run
         FF.map(run(a))(y => {
           val (ba, b) = y.run
-          Costate(x => (ba(x))(ac), b)
+          error("") // todo Costate(x => (ba(x))(ac), b)
         })
       }))
 
@@ -116,9 +116,9 @@ sealed trait LensT[F[+_], A, B] {
   def sum[C](that: => LensT[F, C, B])(implicit FF: Functor[F]): LensT[F, Either[A, C], B] =
     lensT{
       case Left(a) =>
-        FF.map(run(a))(_ map (GF.map(_)(Left(_))))
+        error("") // todo FF.map(run(a))(_ map (GF.map(_)(Left(_))))
       case Right(c) =>
-        FF.map(that run c)(_ map (GF.map(_)(Right(_))))
+        error("") // todo FF.map(that run c)(_ map (GF.map(_)(Right(_))))
     }
 
   /** Alias for `sum` */
@@ -129,7 +129,7 @@ sealed trait LensT[F[+_], A, B] {
     lensT {
       case (a, c) => FF.map2(run(a), that run c)((x, y) =>
         x *** y map {
-          case (q, r) => GG.map2(q, r)((i, j) => (i, j))
+          case (q, r) => error("") // todo GG.map2(q, r)((i, j) => (i, j))
         })
     }
 
@@ -237,13 +237,16 @@ trait LensTFunctions {
   }
 
   def lens[A, B](r: A => Costate[B, A]): Lens[A, B] =
-    lensT[Id, Id, A, B](r)
+    lensT[Id, A, B](r)
+
+  def lensp[F[+_], A, B](r: A => Costate[B, A])(implicit PF: Pointed[F]): LensT[F, A, B] =
+    error("") // todo lensT(a => PF.point(r(a)map (PG.point(_))))
 
   def lensgT[F[+_], A, B](set: A => F[B => A], get: A => F[B])(implicit M: Bind[F]): LensT[F, A, B] =
     lensT(a => M.map2(set(a), get(a))(Costate(_, _)))
 
   def lensg[A, B](set: A => B => A, get: A => B): Lens[A, B] =
-    lensgT[Id, Id, A, B](set, get)
+    lensgT[Id, A, B](set, get)
 
   def lensu[A, B](set: (A, B) => A, get: A => B): Lens[A, B] =
     lensg(set.curried, get)
@@ -314,11 +317,8 @@ trait LensTFunctions {
       })
     }
 
-  def lensSetJoin[F[+_], A, B](lens: LensT[F, F, A, B], b: B, a: A)(implicit F: Bind[F]): F[A] =
-    F.bind(lens run a)(_ put b)
-
-  def lensSetLift[T[_[_], _], F[+_], A, B](lens: LensT[F, ({type λ[+α] = T[F, α]})#λ, A, B], b: B, a: A)(implicit F: Monad[F], G: Bind[({type λ[+α] = T[F, α]})#λ], T: MonadTrans[T]): T[F, A] =
-    G.bind(T liftM (lens run a))(_ put b)
+  def lensSetJoin[F[+_], A, B](lens: LensT[F, A, B], b: B, a: A)(implicit F: Bind[F]): F[A] =
+    error("") // F.bind(lens run a)(_ put b)
 
 }
 
