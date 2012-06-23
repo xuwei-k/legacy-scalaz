@@ -67,7 +67,7 @@ sealed trait EitherT[F[+_], +A, +B] {
   def bimap[C, D](f: A => C, g: B => D)(implicit F: Functor[F]): EitherT[F, C, D] =
     map(g).left.map(f)
 
-  def bitraverse[G[_], C, D](f: (A) => G[C], g: (B) => G[D])(implicit F: Traverse[F], G: Applicative[G]): G[EitherT[F, C, D]] = {
+  def bitraverse[G[+_], C, D](f: (A) => G[C], g: (B) => G[D])(implicit F: Traverse[F], G: Applicative[G]): G[EitherT[F, C, D]] = {
     import std.either.eitherInstance
     Applicative[G].map(F.traverse(run)(Bitraverse[Either].bitraverseF(f, g)))(EitherT.eitherT(_: F[Either[C, D]]))
   }
@@ -308,7 +308,7 @@ trait EitherTBifunctor[F[_]] extends Bifunctor[({type λ[α, β]=EitherT[F, α, 
 trait EitherTBitraverse[F[_]] extends Bitraverse[({type λ[α, β] = EitherT[F, α, β]})#λ] with EitherTBifunctor[F] {
   implicit def F: Traverse[F]
 
-  def bitraverseImpl[G[_] : Applicative, A, B, C, D](fab: EitherT[F, A, B])
+  def bitraverseImpl[G[+_] : Applicative, A, B, C, D](fab: EitherT[F, A, B])
                                                 (f: (A) => G[C], g: (B) => G[D]): G[EitherT[F, C, D]] =
     fab.bitraverse(f, g)
 }

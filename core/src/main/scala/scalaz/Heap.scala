@@ -161,7 +161,7 @@ sealed trait Heap[A] {
 
   /**Traverse the elements of the heap in sorted order and produce a new heap with applicative effects.
    * O(n log n)*/
-  def traverse[F[_] : Applicative, B: Order](f: A => F[B]): F[Heap[B]] = {
+  def traverse[F[+_] : Applicative, B: Order](f: A => F[B]): F[Heap[B]] = {
     val F = Applicative[F]
     import std.stream._
     F.map(F.traverse(toStream)(f))(fromCodata[Stream, B])

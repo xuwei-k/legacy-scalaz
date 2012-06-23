@@ -135,7 +135,7 @@ sealed trait Validation[+E, +A] {
     case Failure(_) => true
   }
 
-  def traverse[G[_] : Applicative, B, EE >: E](f: A => G[B]): G[Validation[EE, B]] = this match {
+  def traverse[G[+_] : Applicative, B, EE >: E](f: A => G[B]): G[Validation[EE, B]] = this match {
     case Success(a) => Applicative[G].map(f(a))(Success(_))
     case Failure(e) => Applicative[G].point(Failure(e))
   }
@@ -157,7 +157,7 @@ sealed trait Validation[+E, +A] {
     case Success(b) => Success(g(b))
   }
 
-  def bitraverse[G[_] : Applicative, C, D](f: (E) => G[C], g: (A) => G[D]): G[Validation[C, D]] = this match {
+  def bitraverse[G[+_] : Applicative, C, D](f: (E) => G[C], g: (A) => G[D]): G[Validation[C, D]] = this match {
     case Failure(a) => Applicative[G].map(f(a))(Failure(_))
     case Success(b) => Applicative[G].map(g(b))(Success(_))
   }
@@ -344,7 +344,7 @@ trait ValidationInstances extends ValidationInstances0 {
     with Applicative[({type λ[α] = Validation[E, α]})#λ] with Plus[({type λ[α] = Validation[E, α]})#λ] {
     def point[A](a: => A): Validation[E, A] = Success(a)
 
-    def traverseImpl[G[_] : Applicative, A, B](fa: Validation[E, A])(f: A => G[B]): G[Validation[E, B]] = fa traverse f
+    def traverseImpl[G[+_] : Applicative, A, B](fa: Validation[E, A])(f: A => G[B]): G[Validation[E, B]] = fa traverse f
 
     override def foldRight[A, B](fa: Validation[E, A], z: => B)(f: (A, => B) => B): B = fa.foldRight(z)(f)
 
@@ -358,7 +358,7 @@ trait ValidationInstances extends ValidationInstances0 {
   implicit def validationBitraverse = new Bitraverse[Validation] {
     override def bimap[A, B, C, D](fab: Validation[A, B])(f: A => C, g: B => D): Validation[C, D] = fab.bimap(f, g)
 
-    def bitraverseImpl[G[_] : Applicative, A, B, C, D](fab: Validation[A, B])(f: (A) => G[C], g: (B) => G[D]) = fab.bitraverse[G, C, D](f, g)
+    def bitraverseImpl[G[+_] : Applicative, A, B, C, D](fab: Validation[A, B])(f: (A) => G[C], g: (B) => G[D]) = fab.bitraverse[G, C, D](f, g)
   }
 
   implicit def validationSemigroup[E, A](implicit E0: Semigroup[E]): Semigroup[Validation[E, A]] = new Semigroup[Validation[E, A]] {
@@ -375,7 +375,7 @@ trait ValidationInstances extends ValidationInstances0 {
   def validationMonad[E] = new Traverse[({type λ[α] = Validation[E, α]})#λ] with Monad[({type λ[α] = Validation[E, α]})#λ] {
     def point[A](a: => A): Validation[E, A] = Success(a)
 
-    def traverseImpl[G[_] : Applicative, A, B](fa: Validation[E, A])(f: A => G[B]): G[Validation[E, B]] = fa traverse f
+    def traverseImpl[G[+_] : Applicative, A, B](fa: Validation[E, A])(f: A => G[B]): G[Validation[E, B]] = fa traverse f
 
     override def foldRight[A, B](fa: Validation[E, A], z: => B)(f: (A, => B) => B): B = fa.foldRight(z)(f)
 

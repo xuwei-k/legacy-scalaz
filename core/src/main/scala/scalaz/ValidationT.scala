@@ -59,7 +59,7 @@ sealed trait ValidationT[F[+_], +E, +A] {
   def forall(f: A => Boolean)(implicit F: Functor[F]): F[Boolean] =
     F.map(run)(_.forall(f))
 
-  def traverse[G[_], B, EE >: E](f: A => G[B])(implicit G: Applicative[G], F: Traverse[F]): G[ValidationT[F, E, B]] =
+  def traverse[G[+_], B, EE >: E](f: A => G[B])(implicit G: Applicative[G], F: Traverse[F]): G[ValidationT[F, E, B]] =
     G.map(F.traverse(run)(_.traverse(f)))(ValidationT(_))
 
   def foldRight[B](z: => B)(f: (A, => B) => B)(implicit F: Foldable[F]): B =
@@ -71,7 +71,7 @@ sealed trait ValidationT[F[+_], +E, +A] {
   def bimap[C, D](f: E => C, g: A => D)(implicit F: Functor[F]): ValidationT[F, C, D] =
     ValidationT(F.map(run)(_.bimap(f, g)))
 
-  def bitraverse[G[_], C, D](f: E => G[C], g: A => G[D])(implicit G: Applicative[G], F: Traverse[F]) =
+  def bitraverse[G[+_], C, D](f: E => G[C], g: A => G[D])(implicit G: Applicative[G], F: Traverse[F]) =
     G.map(F.traverse(run)(_.bitraverse(f, g)))(ValidationT(_))
 }
 
@@ -206,7 +206,7 @@ trait ValidationTInstances4 extends ValidationTInstances3 {
 }
 
 trait ValidationTInstances extends ValidationTInstances4 {
-  implicit def validationTApplicative[F[_], E](implicit F0: Applicative[F], E0: Semigroup[E]) = new ValidationTApplicative[F, E] {
+  implicit def validationTApplicative[F[+_], E](implicit F0: Applicative[F], E0: Semigroup[E]) = new ValidationTApplicative[F, E] {
     implicit def F = F0
 
     implicit def E = E0
@@ -218,7 +218,7 @@ trait ValidationTInstances extends ValidationTInstances4 {
 
   implicit def validationTMonadTrans[E] = new ValidationTMonadTrans[E] {}
 
-  def validationTNelApplicative[F[_], E](implicit F: Applicative[F]) = validationTApplicative[F, NonEmptyList[E]]
+  def validationTNelApplicative[F[+_], E](implicit F: Applicative[F]) = validationTApplicative[F, NonEmptyList[E]]
 }
 
 trait ValidationTFunctor[F[_], E] extends Functor[({type λ[α] = ValidationT[F, E, α]})#λ] {
@@ -265,7 +265,7 @@ trait ValidationTFoldable[F[_], E] extends Foldable.FromFoldr[({type λ[α] = Va
 trait ValidationTTraverse[F[_], E] extends Traverse[({type λ[α] = ValidationT[F, E, α]})#λ] with ValidationTFoldable[F, E] {
   implicit def F: Traverse[F]
 
-  def traverseImpl[G[_] : Applicative, A, B](fa: ValidationT[F, E, A])(f: (A) => G[B]): G[ValidationT[F, E, B]] = fa traverse f
+  def traverseImpl[G[+_] : Applicative, A, B](fa: ValidationT[F, E, A])(f: (A) => G[B]): G[ValidationT[F, E, B]] = fa traverse f
 }
 
 trait ValidationTBifunctor[F[_]] extends Bifunctor[({type λ[α, β] = ValidationT[F, α, β]})#λ] {
@@ -277,7 +277,7 @@ trait ValidationTBifunctor[F[_]] extends Bifunctor[({type λ[α, β] = Validatio
 trait ValidationTBitraverse[F[_]] extends Bitraverse[({type λ[α, β] = ValidationT[F, α, β]})#λ] with ValidationTBifunctor[F] {
   implicit def F: Traverse[F]
 
-  def bitraverseImpl[G[_] : Applicative, A, B, C, D](fab: ValidationT[F, A, B])
+  def bitraverseImpl[G[+_] : Applicative, A, B, C, D](fab: ValidationT[F, A, B])
                                                 (f: (A) => G[C], g: (B) => G[D]): G[ValidationT[F, C, D]] =
     fab.bitraverse(f, g)
 }

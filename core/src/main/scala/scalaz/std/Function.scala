@@ -24,7 +24,7 @@ trait FunctionInstances extends FunctionInstances0 {
 
     def bind[A, B](fa: () => A)(f: (A) => () => B) = f(fa())
 
-    def traverseImpl[G[_]: Applicative, A, B](fa: () => A)(f: (A) => G[B]) =
+    def traverseImpl[G[+_]: Applicative, A, B](fa: () => A)(f: (A) => G[B]) =
       Applicative[G].map(f(fa()))((b: B) => () => b)
 
     override def foldRight[A, B](fa: () => A, z: => B)(f: (A, => B) => B) = f(fa(), z)

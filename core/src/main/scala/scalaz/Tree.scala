@@ -92,7 +92,7 @@ sealed trait Tree[A] {
     Tree.node(r.rootLabel, r.subForest #::: subForest.map(_.flatMap(f)))
   }
 
-  def traverse[G[_] : Applicative, B](f: A => G[B]): G[Tree[B]] = {
+  def traverse[G[+_] : Applicative, B](f: A => G[B]): G[Tree[B]] = {
     val G = Applicative[G]
     import std.stream._
     G.apF(G.map(f(rootLabel))((x: B) => (xs: Stream[Tree[B]]) => Tree.node(x, xs)))(Traverse[Stream].traverse[G, Tree[A], Tree[B]](subForest)((_: Tree[A]).traverse[G, B](f)))
@@ -117,7 +117,7 @@ trait TreeInstances {
     def copoint[A](p: Tree[A]): A = p.rootLabel
     override def map[A, B](fa: Tree[A])(f: (A) => B) = fa map f
     def bind[A, B](fa: Tree[A])(f: (A) => Tree[B]): Tree[B] = fa flatMap f
-    def traverseImpl[G[_]: Applicative, A, B](fa: Tree[A])(f: (A) => G[B]): G[Tree[B]] = fa traverse f
+    def traverseImpl[G[+_]: Applicative, A, B](fa: Tree[A])(f: (A) => G[B]): G[Tree[B]] = fa traverse f
     override def foldRight[A, B](fa: Tree[A], z: => B)(f: (A, => B) => B): B = fa.foldRight(z)(f)
     override def foldMap[A, B](fa: Tree[A])(f: (A) => B)(implicit F: Monoid[B]): B = fa foldMap f
   }

@@ -43,7 +43,7 @@ sealed trait NonEmptyList[+A] {
     nel(bb.head, bb.tail)
   }
 
-  def traverse[G[_] : Applicative, B](f: A => G[B]): G[NonEmptyList[B]] = {
+  def traverse[G[+_] : Applicative, B](f: A => G[B]): G[NonEmptyList[B]] = {
     import std.list.listInstance
 
     Applicative[G].map(Traverse[List].traverse(list)(f))(bs => NonEmptyList.nel(bs.head, bs.tail))
@@ -105,7 +105,7 @@ object NonEmptyList extends NonEmptyListFunctions with NonEmptyListInstances {
 trait NonEmptyListInstances {
   implicit val nonEmptyList: Traverse[NonEmptyList] with Monad[NonEmptyList] with Plus[NonEmptyList] with Comonad[NonEmptyList] with Each[NonEmptyList] =
     new Traverse[NonEmptyList] with Monad[NonEmptyList] with Plus[NonEmptyList] with Comonad[NonEmptyList] with Cobind.FromCojoin[NonEmptyList] with Each[NonEmptyList] with Zip[NonEmptyList] with Unzip[NonEmptyList] {
-      def traverseImpl[G[_] : Applicative, A, B](fa: NonEmptyList[A])(f: A => G[B]): G[NonEmptyList[B]] =
+      def traverseImpl[G[+_] : Applicative, A, B](fa: NonEmptyList[A])(f: A => G[B]): G[NonEmptyList[B]] =
         fa traverse f
 
       override def foldRight[A, B](fa: NonEmptyList[A], z: => B)(f: (A, => B) => B): B = fa.foldRight(z)(f)

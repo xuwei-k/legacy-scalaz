@@ -108,7 +108,7 @@ trait Traverse[F[_]] extends Functor[F] with Foldable[F] { self =>
     }
 
     /** Two sequentially dependent effects can be fused into one, their composition */
-    def sequentialFusion[N[_], M[_], A, B, C](fa: F[A], amb: A => M[B], bnc: B => N[C])
+    def sequentialFusion[N[+_], M[+_], A, B, C](fa: F[A], amb: A => M[B], bnc: B => N[C])
                                                (implicit N: Applicative[N], M: Applicative[M], MN: Equal[M[N[F[C]]]]): Boolean = {
       type MN[A] = M[N[A]]
       val t1: MN[F[C]] = M.map(traverse[M, A, B](fa)(amb))(fb => traverse[N, B, C](fb)(bnc))
@@ -135,8 +135,8 @@ trait Traverse[F[_]] extends Functor[F] with Foldable[F] { self =>
     }
 
     /** Two independent effects can be fused into a single effect, their product. */
-    def parallelFusion[N[_], M[_], A, B](fa: F[A], amb: A => M[B], anb: A => N[B])
-                                        (implicit N: Applicative[N], M: Applicative[M], MN: Equal[(M[F[B]], N[F[B]])]): Boolean = {
+    def parallelFusion[N[+_], M[+_], A, B](fa: F[A], amb: A => M[B], anb: A => N[B])
+                                          (implicit N: Applicative[N], M: Applicative[M], MN: Equal[(M[F[B]], N[F[B]])]): Boolean = {
       type MN[A] = (M[A], N[A])
       val t1: MN[F[B]] = (traverse[M, A, B](fa)(amb), traverse[N, A, B](fa)(anb))
       val t2: MN[F[B]] = traverse[MN, A, B](fa)(a => (amb(a), anb(a)))(M product N)

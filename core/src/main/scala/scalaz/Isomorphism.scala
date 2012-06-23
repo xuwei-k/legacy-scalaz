@@ -279,7 +279,7 @@ trait IsomorphismFoldable[F[_], G[_]] extends Foldable[F] {
 trait IsomorphismTraverse[F[_], G[_]] extends Traverse[F] with IsomorphismFoldable[F, G] with IsomorphismFunctor[F, G] {
   implicit def G: Traverse[G]
 
-  def traverseImpl[H[_] : Applicative, A, B](fa: F[A])(f: (A) => H[B]): H[F[B]] =
+  def traverseImpl[H[+_] : Applicative, A, B](fa: F[A])(f: (A) => H[B]): H[F[B]] =
     Applicative[H].map(G.traverseImpl(iso.to(fa))(f))(iso.from.apply)
 }
 
@@ -295,6 +295,6 @@ trait IsomorphismBifunctor[F[_, _], G[_, _]] extends Bifunctor[F] {
 trait IsomorphismBitraverse[F[_, _], G[_, _]] extends Bitraverse[F] with IsomorphismBifunctor[F, G] {
   implicit def G: Bitraverse[G]
 
-  def bitraverseImpl[H[_]: Applicative, A, B, C, D](fab: F[A, B])(f: (A) => H[C], g: (B) => H[D]): H[F[C, D]] =
+  def bitraverseImpl[H[+_]: Applicative, A, B, C, D](fab: F[A, B])(f: (A) => H[C], g: (B) => H[D]): H[F[C, D]] =
     Applicative[H].map(G.bitraverseImpl(iso.to(fab))(f, g))(iso.from.apply)
 }

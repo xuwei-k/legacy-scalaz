@@ -65,7 +65,7 @@ sealed trait LazyEitherT[F[+_], +A, +B] {
   def bimap[C, D](f: (=> A) => C, g: (=> B) => D)(implicit F: Functor[F]): LazyEitherT[F, C, D] =
     map(g).left.map(f)
 
-  def bitraverse[G[_], C, D](f: (A) => G[C], g: (B) => G[D])(implicit F: Traverse[F], G: Applicative[G]): G[LazyEitherT[F, C, D]] = {
+  def bitraverse[G[+_], C, D](f: (A) => G[C], g: (B) => G[D])(implicit F: Traverse[F], G: Applicative[G]): G[LazyEitherT[F, C, D]] = {
     import std.either.eitherInstance
     Applicative[G].map(F.traverse(run)(Bitraverse[LazyEither].bitraverseF(f, g)))(LazyEitherT(_: F[LazyEither[C, D]]))
   }
@@ -291,6 +291,6 @@ trait LazyEitherTBifunctor[F[_]] extends Bifunctor[({type λ[α, β] = LazyEithe
 trait LazyEitherTBitraverse[F[_]] extends Bitraverse[({type λ[α, β] = LazyEitherT[F, α, β]})#λ] {
   implicit def F: Traverse[F]
 
-  def bitraverseImpl[G[_]: Applicative, A, B, C, D](fab: LazyEitherT[F, A, B])(f: (A) => G[C], g: (B) => G[D]): G[LazyEitherT[F, C, D]] =
+  def bitraverseImpl[G[+_]: Applicative, A, B, C, D](fab: LazyEitherT[F, A, B])(f: (A) => G[C], g: (B) => G[D]): G[LazyEitherT[F, C, D]] =
     Applicative[G].map(F.traverse(fab.run)(Bitraverse[LazyEither].bitraverseF(f, g)))(LazyEitherT.lazyEitherT(_))
 }
