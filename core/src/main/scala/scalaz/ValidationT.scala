@@ -1,6 +1,6 @@
 package scalaz
 
-sealed trait ValidationT[F[_], E, A] {
+sealed trait ValidationT[F[+_], +E, +A] {
   self =>
 
   import ValidationT._
@@ -76,9 +76,9 @@ sealed trait ValidationT[F[_], E, A] {
 }
 
 object ValidationT extends ValidationTFunctions with ValidationTInstances {
-  def apply[F[_], E, A](m: F[Validation[E, A]]): ValidationT[F, E, A] = validationT(m)
+  def apply[F[+_], E, A](m: F[Validation[E, A]]): ValidationT[F, E, A] = validationT(m)
 
-  sealed trait FailProjectionT[F[_], E, A] {
+  sealed trait FailProjectionT[F[+_], +E, +A] {
     self =>
 
     val validationT: ValidationT[F, E, A]
@@ -113,22 +113,22 @@ object FailProjectionT extends FailProjectionTFunctions {
 
   import ValidationT.FailProjectionT
 
-  def apply[F[_], E, A](e: E)(implicit F: Pointed[F]): FailProjectionT[F, E, A] =
+  def apply[F[+_], E, A](e: E)(implicit F: Pointed[F]): FailProjectionT[F, E, A] =
     ValidationT[F, E, A](F.point(Failure[E, A](e))).fail
 }
 
 trait ValidationTFunctions {
-  def validationT[F[_], E, A](m: F[Validation[E, A]]): ValidationT[F, E, A] = new ValidationT[F, E, A] {
+  def validationT[F[+_], E, A](m: F[Validation[E, A]]): ValidationT[F, E, A] = new ValidationT[F, E, A] {
     def run = m
   }
 
-  def successT[F[_], E, A](a: => A)(implicit F: Pointed[F]): ValidationT[F, E, A] =
+  def successT[F[+_], E, A](a: => A)(implicit F: Pointed[F]): ValidationT[F, E, A] =
     ValidationT(F.point(Validation.success(a)))
 
-  def failureT[F[_], E, A](e: => E)(implicit F: Pointed[F]): ValidationT[F, E, A] =
+  def failureT[F[+_], E, A](e: => E)(implicit F: Pointed[F]): ValidationT[F, E, A] =
     ValidationT(F.point(Validation.failure(e)))
 
-  def fromEitherT[F[_], E, A](e: EitherT[F, E, A])(implicit F: Functor[F]): ValidationT[F, E, A] =
+  def fromEitherT[F[+_], E, A](e: EitherT[F, E, A])(implicit F: Functor[F]): ValidationT[F, E, A] =
     validationT(F.map(e.run)(Validation.fromEither(_)))
 }
 
@@ -283,11 +283,11 @@ trait ValidationTBitraverse[F[_]] extends Bitraverse[({type λ[α, β] = Validat
 }
 
 trait ValidationTMonadTrans[A] extends MonadTrans[({type λ[α[_], β] = ValidationT[α, A, β]})#λ] {
-  def hoist[M[_], N[_]](f: M ~> N)(implicit M: Monad[M]) = new (({type λ[α] = ValidationT[M, A, α]})#λ ~> ({type λ[α] = ValidationT[N, A, α]})#λ) {
+  def hoist[M[+_], N[+_]](f: M ~> N)(implicit M: Monad[M]) = new (({type λ[α] = ValidationT[M, A, α]})#λ ~> ({type λ[α] = ValidationT[N, A, α]})#λ) {
     def apply[B](mb: ValidationT[M, A, B]): ValidationT[N, A, B] = ValidationT(f.apply(mb.run))
   }
 
-  def liftM[M[_], B](mb: M[B])(implicit M: Monad[M]): ValidationT[M, A, B] = ValidationT(M.map(mb)(Success[A, B](_)))
+  def liftM[M[+_], B](mb: M[B])(implicit M: Monad[M]): ValidationT[M, A, B] = ValidationT(M.map(mb)(Success[A, B](_)))
 
   implicit def apply[M[_] : Monad]: Monad[({type λ[α] = ValidationT[M, A, α]})#λ] = ValidationT.validationTMonad[M, A]
 }

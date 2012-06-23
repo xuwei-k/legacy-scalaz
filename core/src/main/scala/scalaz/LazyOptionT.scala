@@ -1,6 +1,6 @@
 package scalaz
 
-sealed trait LazyOptionT[F[_], A] {
+sealed trait LazyOptionT[F[+_], +A] {
   def run: F[LazyOption[A]]
 
   import LazyOption._

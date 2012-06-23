@@ -1,6 +1,6 @@
 package scalaz
 
-sealed trait LazyEitherT[F[_], A, B] {
+sealed trait LazyEitherT[F[+_], +A, +B] {
   def run: F[LazyEither[A, B]]
 
   import LazyEither._
@@ -89,10 +89,10 @@ sealed trait LazyEitherT[F[_], A, B] {
 }
 
 object LazyEitherT extends LazyEitherTFunctions with LazyEitherTInstances {
-  def apply[F[_], A, B](a: F[LazyEither[A, B]]): LazyEitherT[F, A, B] =
+  def apply[F[+_], A, B](a: F[LazyEither[A, B]]): LazyEitherT[F, A, B] =
     lazyEitherT(a)
 
-  sealed trait LeftProjectionT[F[_], A, B] {
+  sealed trait LeftProjectionT[F[+_], +A, +B] {
     def lazyEitherT: LazyEitherT[F, A, B]
 
     import OptionT._
