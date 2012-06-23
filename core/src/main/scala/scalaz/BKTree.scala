@@ -22,7 +22,7 @@ import BKTree._
  *
  * This implementation is a port of Haskell's [[http://hackage.haskell.org/packages/archive/bktrees/0.2.1/doc/html/src/Data-Set-BKTree.html Data.Set.BKTree]]
  */
-sealed trait BKTree[A] {
+sealed trait BKTree[+A] {
   def isEmpty: Boolean =
     this match {
       case BKTreeEmpty()       => true
@@ -41,7 +41,7 @@ sealed trait BKTree[A] {
       case BKTreeNode(_, s, _) => s
     }
 
-  def +(a: A)(implicit A: MetricSpace[A]): BKTree[A] =
+  def +[AA >: A](a: AA)(implicit A: MetricSpace[AA]): BKTree[AA] =
     this match {
       case BKTreeEmpty()       => BKTreeNode(a, 1, IntMap.empty)
       case BKTreeNode(v, s, c) => {
@@ -53,8 +53,8 @@ sealed trait BKTree[A] {
       }
     }
 
-  def ++(t: BKTree[A])(implicit m: MetricSpace[A]): BKTree[A] = {
-    var k: BKTree[A] = this
+  def ++[AA >: A](t: BKTree[AA])(implicit m: MetricSpace[AA]): BKTree[AA] = {
+    var k: BKTree[AA] = this
     for (v <- t.values)
       k = k + v
     k
@@ -71,7 +71,7 @@ sealed trait BKTree[A] {
    * Returns true of this set contains `a`.
    */
   @tailrec
-  final def contains(a: A)(implicit A: MetricSpace[A]): Boolean =
+  final def contains[AA >: A](a: AA)(implicit A: MetricSpace[AA]): Boolean =
     this match {
       case BKTreeEmpty()       => false
       case BKTreeNode(v, _, c) =>
@@ -83,10 +83,10 @@ sealed trait BKTree[A] {
     }
 
   /** An alias for `contains` */
-  final def -?-(a: A)(implicit A: MetricSpace[A]): Boolean = contains(a)
+  final def -?-[AA >: A](a: AA)(implicit A: MetricSpace[AA]): Boolean = contains(a)
 
   /** Returns true if this set contains an element which has a distance from `a` that is less than or equal to `n` */
-  def containsApproximate(a: A, n: Int)(implicit A: MetricSpace[A]): Boolean =
+  def containsApproximate[AA >: A](a: AA, n: Int)(implicit A: MetricSpace[AA]): Boolean =
     this match {
       case BKTreeEmpty()       => false
       case BKTreeNode(v, _, c) =>
@@ -95,10 +95,10 @@ sealed trait BKTree[A] {
     }
 
   /** An alias for `containsApproximate` */
-  def =?=(a: A, n: Int)(implicit A: MetricSpace[A]): Boolean = containsApproximate(a, n)
+  def =?=[AA >: A](a: AA, n: Int)(implicit A: MetricSpace[AA]): Boolean = containsApproximate(a, n)
 
   /** Returns the elements which have an distance from `a` that is less than or equal to `n`. */
-  def valuesApproximate(a: A, n: Int)(implicit A: MetricSpace[A]): List[A] =
+  def valuesApproximate[AA >: A](a: AA, n: Int)(implicit A: MetricSpace[AA]): List[AA] =
     this match {
       case BKTreeEmpty()       => Nil
       case BKTreeNode(v, _, c) =>
@@ -111,9 +111,9 @@ sealed trait BKTree[A] {
     }
 
   /** An alias for `valuesApproximate` */
-  def |=|(a: A, n: Int)(implicit A: MetricSpace[A]): List[A] = valuesApproximate(a, n)
+  def |=|[AA >: A](a: AA, n: Int)(implicit A: MetricSpace[AA]): List[AA] = valuesApproximate(a, n)
 
-  private type M[A] = IntMap[A]
+  private type M[+A] = IntMap[A]
 
   private def subChildren(d: Int, n: Int): M[BKTree[A]] =
     this match {
@@ -121,18 +121,18 @@ sealed trait BKTree[A] {
       case BKTreeNode(_, _, c) => subMap(c, d, n)
     }
 
-  private def subMap(m: M[BKTree[A]], d: Int, n: Int): M[BKTree[A]] =
-    splitMap(splitMap(m, d - n - 1)._2, d + n + 1)._1
-
   private def splitChildren(k: Int): (M[BKTree[A]], M[BKTree[A]]) =
     this match {
       case BKTreeEmpty()       => (IntMap.empty, IntMap.empty)
       case BKTreeNode(_, _, c) => splitMap(c, k)
     }
 
-  private def splitMap(m: M[BKTree[A]], k: Int): (M[BKTree[A]], M[BKTree[A]]) = {
-    var m1: M[BKTree[A]] = IntMap.empty
-    var m2: M[BKTree[A]] = IntMap.empty
+  private def subMap[B](m: M[BKTree[B]], d: Int, n: Int): M[BKTree[B]] =
+    splitMap(splitMap(m, d - n - 1)._2, d + n + 1)._1
+
+  private def splitMap[B](m: M[BKTree[B]], k: Int): (M[BKTree[B]], M[BKTree[B]]) = {
+    var m1: M[BKTree[B]] = IntMap.empty
+    var m2: M[BKTree[B]] = IntMap.empty
     for ((i, v) <- m.iterator) {
       if (i < k)
         m1 = m1 + ((i, v))

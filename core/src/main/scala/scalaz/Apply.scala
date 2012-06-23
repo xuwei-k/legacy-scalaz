@@ -19,7 +19,7 @@ trait Apply[F[+_]] extends Functor[F] { self =>
   }
 
   /**The product of Applys `F` and `G`, `[x](F[x], G[x]])`, is a Apply */
-  def product[G[_]](implicit G0: Apply[G]): Apply[({type λ[α] = (F[α], G[α])})#λ] = new ProductApply[F, G] {
+  def product[G[+_]](implicit G0: Apply[G]): Apply[({type λ[+α] = (F[α], G[α])})#λ] = new ProductApply[F, G] {
     implicit def F = self
 
     implicit def G = G0
@@ -105,7 +105,7 @@ trait Apply[F[+_]] extends Functor[F] { self =>
 }
 
 object Apply {
-  @inline def apply[F[_]](implicit F: Apply[F]): Apply[F] = F
+  @inline def apply[F[+_]](implicit F: Apply[F]): Apply[F] = F
 
   ////
 
