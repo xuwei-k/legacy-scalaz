@@ -38,11 +38,11 @@ trait Foldable[F[_]]  { self =>
   }
 
   /**Right-associative, monadic fold of a structure. */
-  def foldRightM[G[_], A, B](fa: F[A], z: => B)(f: (A, => B) => G[B])(implicit M: Monad[G]): G[B] =
+  def foldRightM[G[+_], A, B](fa: F[A], z: => B)(f: (A, => B) => G[B])(implicit M: Monad[G]): G[B] =
     foldLeft[A, B => G[B]](fa, M.point(_))((b, a) => w => M.bind(f(a, w))(b))(z)
 
   /**Left-associative, monadic fold of a structure. */
-  def foldLeftM[G[_], A, B](fa: F[A], z: B)(f: (B, A) => G[B])(implicit M: Monad[G]): G[B] =
+  def foldLeftM[G[+_], A, B](fa: F[A], z: B)(f: (B, A) => G[B])(implicit M: Monad[G]): G[B] =
     foldRight[A, B => G[B]](fa, M.point(_))((a, b) => w => M.bind(f(w, a))(b))(z)
   
   // derived functions
@@ -55,11 +55,11 @@ trait Foldable[F[_]]  { self =>
   def fold[M: Monoid](t: F[M]): M = foldMap[M, M](t)(x => x)
 
   /** Strict traversal in an applicative functor `M` that ignores the result of `f`. */  
-  def traverse_[M[_], A, B](fa: F[A])(f: A => M[B])(implicit a: Applicative[M]): M[Unit] =
+  def traverse_[M[+_], A, B](fa: F[A])(f: A => M[B])(implicit a: Applicative[M]): M[Unit] =
     foldLeft(fa, a.pure(()))((x, y) => a.ap(f(y))(a.map(x)(_ => _ => ())))
 
   /** Strict sequencing in an applicative functor `M` that ignores the value in `fa`. */
-  def sequence_[M[_], A, B](fa: F[M[A]])(implicit a: Applicative[M]): M[Unit] =
+  def sequence_[M[+_], A, B](fa: F[M[A]])(implicit a: Applicative[M]): M[Unit] =
     traverse_(fa)(x => x)
 
   /**Curried version of `foldRight` */
@@ -69,11 +69,11 @@ trait Foldable[F[_]]  { self =>
   final def foldl[A, B](fa: F[A], z: B)(f: B => A => B) = foldLeft(fa, z)((b, a) => f(b)(a))
 
   /**Curried version of `foldRightM` */
-  final def foldrM[G[_], A, B](fa: F[A], z: => B)(f: A => ( => B) => G[B])(implicit M: Monad[G]): G[B] = 
+  final def foldrM[G[+_], A, B](fa: F[A], z: => B)(f: A => ( => B) => G[B])(implicit M: Monad[G]): G[B] = 
     foldRightM(fa, z)((a, b) => f(a)(b))
 
   /**Curried version of `foldLeftM` */
-  final def foldlM[G[_], A, B](fa: F[A], z: => B)(f: B => A => G[B])(implicit M: Monad[G]): G[B] =
+  final def foldlM[G[+_], A, B](fa: F[A], z: => B)(f: B => A => G[B])(implicit M: Monad[G]): G[B] =
     foldLeftM(fa, z)((b, a) => f(b)(a))
 
   def foldMapIdentity[A,B](fa: F[A])(implicit F: Monoid[A]): A = foldMap(fa)(a => a)
@@ -126,10 +126,10 @@ trait Foldable[F[_]]  { self =>
       }
     })._1
 
-  def collapse[X[_], A](x: F[A])(implicit F: Foldable[F], A: ApplicativePlus[X]): X[A] =
+  def collapse[X[+_], A](x: F[A])(implicit F: Foldable[F], A: ApplicativePlus[X]): X[A] =
     F.foldRight(x, A.empty[A])((a, b) => A.plus(A.point(a), b))
 
-  def collapse2[G[_], X[_], A](x: F[G[A]])(implicit
+  def collapse2[G[_], X[+_], A](x: F[G[A]])(implicit
                                             F: Foldable[F]
                                           , G: Foldable[G]
                                           , A: ApplicativePlus[X]): X[A] = {
@@ -137,7 +137,7 @@ trait Foldable[F[_]]  { self =>
     Z collapse x
   }
 
-  def collapse3[G[_], H[_], X[_], A](x: F[G[H[A]]])(implicit
+  def collapse3[G[_], H[_], X[+_], A](x: F[G[H[A]]])(implicit
                                                      F: Foldable[F]
                                                    , G: Foldable[G]
                                                    , H: Foldable[H]
@@ -146,7 +146,7 @@ trait Foldable[F[_]]  { self =>
     Z.collapse(x)
   }
 
-  def collapse4[G[_], H[_], I[_], X[_], A](x: F[G[H[I[A]]]])(implicit
+  def collapse4[G[_], H[_], I[_], X[+_], A](x: F[G[H[I[A]]]])(implicit
                                                               F: Foldable[F]
                                                             , G: Foldable[G]
                                                             , H: Foldable[H]
@@ -156,7 +156,7 @@ trait Foldable[F[_]]  { self =>
     Z.collapse(x)
   }
 
-  def collapse5[G[_], H[_], I[_], J[_], X[_], A](x: F[G[H[I[J[A]]]]])(implicit
+  def collapse5[G[_], H[_], I[_], J[_], X[+_], A](x: F[G[H[I[J[A]]]]])(implicit
                                                                        F: Foldable[F]
                                                                      , G: Foldable[G]
                                                                      , H: Foldable[H]
@@ -167,7 +167,7 @@ trait Foldable[F[_]]  { self =>
     Z.collapse(x)
   }
 
-  def collapse6[G[_], H[_], I[_], J[_], K[_], X[_], A](x: F[G[H[I[J[K[A]]]]]])(implicit
+  def collapse6[G[_], H[_], I[_], J[_], K[_], X[+_], A](x: F[G[H[I[J[K[A]]]]]])(implicit
                                                                                 F: Foldable[F]
                                                                               , G: Foldable[G]
                                                                               , H: Foldable[H]
@@ -179,7 +179,7 @@ trait Foldable[F[_]]  { self =>
     Z.collapse(x)
   }
 
-  def collapse7[G[_], H[_], I[_], J[_], K[_], L[_], X[_], A](x: F[G[H[I[J[K[L[A]]]]]]])(implicit
+  def collapse7[G[_], H[_], I[_], J[_], K[_], L[_], X[+_], A](x: F[G[H[I[J[K[L[A]]]]]]])(implicit
                                                                                          F: Foldable[F]
                                                                                        , G: Foldable[G]
                                                                                        , H: Foldable[H]

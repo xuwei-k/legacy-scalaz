@@ -196,7 +196,7 @@ object StreamT extends StreamTInstances {
     unfold(s)(stepper)
   }
 
-  def wrapEffect[M[_]:Functor,A](m: M[StreamT[M,A]]): StreamT[M,A] = StreamT(Functor[M].map(m)(Skip(_)))
+  def wrapEffect[M[+_]:Functor,A](m: M[StreamT[M,A]]): StreamT[M,A] = StreamT(Functor[M].map(m)(Skip(_)))
   
   abstract sealed class Step[+A, +S] {
     def apply[Z](yieldd: (A, => S) => Z, skip: => S => Z, done: => Z): Z

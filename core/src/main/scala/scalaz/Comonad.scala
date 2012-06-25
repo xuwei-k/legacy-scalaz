@@ -5,7 +5,7 @@ package scalaz
  *
  */
 ////
-trait Comonad[F[_]] extends Copointed[F] with Cojoin[F] with Cobind[F] { self =>
+trait Comonad[F[+_]] extends Copointed[F] with Cojoin[F] with Cobind[F] { self =>
   ////
 
   // derived functions
@@ -30,7 +30,7 @@ trait Comonad[F[_]] extends Copointed[F] with Cojoin[F] with Cobind[F] { self =>
 }
 
 object Comonad {
-  @inline def apply[F[_]](implicit F: Comonad[F]): Comonad[F] = F
+  @inline def apply[F[+_]](implicit F: Comonad[F]): Comonad[F] = F
 
   ////
 

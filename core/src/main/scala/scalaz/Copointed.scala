@@ -5,7 +5,7 @@ package scalaz
  *
  */
 ////
-trait Copointed[F[_]] extends Functor[F] { self =>
+trait Copointed[F[+_]] extends Functor[F] { self =>
   ////
   /** Also known as `extract` / `copure` */
   def copoint[A](p: F[A]): A
@@ -20,7 +20,7 @@ trait Copointed[F[_]] extends Functor[F] { self =>
 }
 
 object Copointed {
-  @inline def apply[F[_]](implicit F: Copointed[F]): Copointed[F] = F
+  @inline def apply[F[+_]](implicit F: Copointed[F]): Copointed[F] = F
 
   ////
 

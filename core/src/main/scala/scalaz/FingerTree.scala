@@ -734,7 +734,7 @@ sealed abstract class FingerTree[V, A](implicit measurer: Reducer[A, V]) {
   /**
    * Like traverse, but with a more constraint type: we need the additional measure to construct the new tree.
    */
-  def traverseTree[F[_], V2, B](f: A => F[B])(implicit ms: Reducer[B, V2], F: Applicative[F]): F[FingerTree[V2, B]] = {
+  def traverseTree[F[+_], V2, B](f: A => F[B])(implicit ms: Reducer[B, V2], F: Applicative[F]): F[FingerTree[V2, B]] = {
     def mkDeep(pr: Finger[V2, B])(m: FingerTree[V2, Node[V2, B]])(sf: Finger[V2, B]): FingerTree[V2, B] = deep(pr, m, sf)
     fold(_ => F.pure(FingerTree.empty[V2, B]),
          (v, a) => F.map(f(a))(a => single(ms.unit(a), a)),
@@ -746,7 +746,7 @@ sealed abstract class FingerTree[V, A](implicit measurer: Reducer[A, V]) {
         })
   }
 
-  private def traverseNode[F[_], V2, B](node: Node[V, A])(f: A => F[B])(implicit ms: Reducer[B, V2], F: Applicative[F]): F[Node[V2, B]] = {
+  private def traverseNode[F[+_], V2, B](node: Node[V, A])(f: A => F[B])(implicit ms: Reducer[B, V2], F: Applicative[F]): F[Node[V2, B]] = {
     def mkNode(x: B)(y: B)(z: B): Node[V2, B] = node3(x, y, z)
     node.fold((v, a, b) => F.map2(f(a), f(b))((x, y) => node2(x, y)),
         (v, a, b, c) =>  {
@@ -755,7 +755,7 @@ sealed abstract class FingerTree[V, A](implicit measurer: Reducer[A, V]) {
     )
   }
 
-  private def traverseFinger[F[_], A, B, V2](digit: Finger[V, A])(f: A => F[B])(implicit ms: Reducer[B, V2], F: Applicative[F]): F[Finger[V2, B]] = {
+  private def traverseFinger[F[+_], A, B, V2](digit: Finger[V, A])(f: A => F[B])(implicit ms: Reducer[B, V2], F: Applicative[F]): F[Finger[V2, B]] = {
     def mkTwo(x: B)(y: B): Finger[V2, B] = two(x, y)
     def mkThree(x: B)(y: B)(z: B): Finger[V2, B] = three(x, y, z)
     def mkFour(w: B)(x: B)(y: B)(z: B): Finger[V2, B] = four(w, x, y, z)
@@ -818,12 +818,12 @@ class FingerTreeIntPlus[A](val value: FingerTree[Int, A]) {
 trait FingerTreeInstances {
   import FingerTree._
 
-  implicit def viewLFunctor[S[_]](implicit s: Functor[S]): Functor[({type λ[α]=ViewL[S, α]})#λ] = new Functor[({type λ[α]=ViewL[S, α]})#λ] {
+  implicit def viewLFunctor[S[+_]](implicit s: Functor[S]): Functor[({type λ[+α]=ViewL[S, α]})#λ] = new Functor[({type λ[+α]=ViewL[S, α]})#λ] {
     def map[A, B](t: ViewL[S, A])(f: A => B): ViewL[S, B] =
       t.fold(EmptyL[S, B], (x, xs) => OnL(f(x), s.map(xs)(f))) //TODO define syntax for &: and :&
   }
 
-  implicit def viewRFunctor[S[_]](implicit s: Functor[S]): Functor[({type λ[α]=ViewR[S, α]})#λ] = new Functor[({type λ[α]=ViewR[S, α]})#λ] {
+  implicit def viewRFunctor[S[+_]](implicit s: Functor[S]): Functor[({type λ[+α]=ViewR[S, α]})#λ] = new Functor[({type λ[+α]=ViewR[S, α]})#λ] {
     def map[A, B](t: ViewR[S, A])(f: A => B): ViewR[S, B] =
       t.fold(EmptyR[S, B], (xs, x) => OnR(s.map(xs)(f), f(x)))
   }

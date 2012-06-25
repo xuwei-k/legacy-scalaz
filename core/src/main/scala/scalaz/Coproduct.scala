@@ -1,6 +1,6 @@
 package scalaz
 
-private[scalaz] trait CoproductFunctor[F[_], G[_]] extends Functor[({type λ[α] = Either[F[α], G[α]]})#λ] {
+private[scalaz] trait CoproductFunctor[F[+_], G[+_]] extends Functor[({type λ[+α] = Either[F[α], G[α]]})#λ] {
   implicit def F: Functor[F]
 
   implicit def G: Functor[G]

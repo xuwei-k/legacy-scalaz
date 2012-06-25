@@ -58,10 +58,10 @@ sealed trait LensT[F[+_], A, B] {
     mod(f, _)
 
   /** Modify the value viewed through the lens, returning a functor `X` full of results. */
-  def modf[X[_]](f: B => X[B], a: A)(implicit F: Functor[F], XF: Functor[X]): F[X[A]] =
+  def modf[X[+_]](f: B => X[B], a: A)(implicit F: Functor[F], XF: Functor[X]): F[X[A]] =
     F.map(run(a))(c => XF.map(f(c.pos))(c put _))
 
-  def =>>=[X[_]](f: B => X[B])(implicit F: Functor[F], XF: Functor[X]): A => F[X[A]] =
+  def =>>=[X[+_]](f: B => X[B])(implicit F: Functor[F], XF: Functor[X]): A => F[X[A]] =
     modf(f, _)
 
   /** Modify the value viewed through the lens, returning a `C` on the side.  */

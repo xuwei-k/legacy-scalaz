@@ -73,11 +73,11 @@ sealed trait Kleisli[M[+_], -A, +B] { self =>
 // Prioritized Implicits for type class instances
 //
 trait KleisliInstances4 {
-  implicit def kleisliFunctor[F[+_], R](implicit F0: Functor[F]): Functor[({type λ[α] = Kleisli[F, R, α]})#λ] = new KleisliFunctor[F, R] {
+  implicit def kleisliFunctor[F[+_], R](implicit F0: Functor[F]): Functor[({type λ[+α] = Kleisli[F, R, α]})#λ] = new KleisliFunctor[F, R] {
     implicit def F: Functor[F] = F0
   }
 
-  implicit def kleisliIdFunctor[R]: Functor[({type λ[α] = Kleisli[Id, R, α]})#λ] = kleisliFunctor[Id, R]
+  implicit def kleisliIdFunctor[R]: Functor[({type λ[+α] = Kleisli[Id, R, α]})#λ] = kleisliFunctor[Id, R]
 }
 
 trait KleisliInstances3 extends KleisliInstances4 {
@@ -86,28 +86,28 @@ trait KleisliInstances3 extends KleisliInstances4 {
   }
   implicit def kleisliIdPointed[R]: Pointed[({type λ[α] = Kleisli[Id, R, α]})#λ] = kleisliPointed[Id, R]
 
-  implicit def kleisliApply[F[+_], R](implicit F0: Apply[F]): Apply[({type λ[α] = Kleisli[F, R, α]})#λ] = new KleisliApply[F, R] {
+  implicit def kleisliApply[F[+_], R](implicit F0: Apply[F]): Apply[({type λ[+α] = Kleisli[F, R, α]})#λ] = new KleisliApply[F, R] {
     implicit def F: Apply[F] = F0
   }
 
-  implicit def kleisliDistributive[F[+_], R](implicit F0: Distributive[F]): Distributive[({type λ[α] = Kleisli[F, R, α]})#λ] = new KleisliDistributive[F, R] {
+  implicit def kleisliDistributive[F[+_], R](implicit F0: Distributive[F]): Distributive[({type λ[+α] = Kleisli[F, R, α]})#λ] = new KleisliDistributive[F, R] {
     implicit def F: Distributive[F] = F0
   }
-  implicit def kleisliIdApply[R]: Apply[({type λ[α] = Kleisli[Id, R, α]})#λ] = kleisliApply[Id, R]
+  implicit def kleisliIdApply[R]: Apply[({type λ[+α] = Kleisli[Id, R, α]})#λ] = kleisliApply[Id, R]
 }
 
 trait KleisliInstances2 extends KleisliInstances3 {
-  implicit def kleisliApplicative[F[+_], R](implicit F0: Applicative[F]): Applicative[({type λ[α] = Kleisli[F, R, α]})#λ] = new KleisliApplicative[F, R] {
+  implicit def kleisliApplicative[F[+_], R](implicit F0: Applicative[F]): Applicative[({type λ[+α] = Kleisli[F, R, α]})#λ] = new KleisliApplicative[F, R] {
     implicit def F: Applicative[F] = F0
   }
-  implicit def kleisliIdApplicative[R]: Applicative[({type λ[α] = Kleisli[Id, R, α]})#λ] = kleisliApplicative[Id, R]
+  implicit def kleisliIdApplicative[R]: Applicative[({type λ[+α] = Kleisli[Id, R, α]})#λ] = kleisliApplicative[Id, R]
   implicit def kleisliPlus[F[+_], A](implicit F0: Plus[F]) = new KleisliPlus[F, A] {
     implicit def F = F0
   }
 }
 
 trait KleisliInstances1 extends KleisliInstances2 {
-  implicit def kleisliApplicativePlus[F[+_], R](implicit F0: ApplicativePlus[F]): ApplicativePlus[({type λ[α] = Kleisli[F, R, α]})#λ] = new ApplicativePlus[({type λ[α] = Kleisli[F, R, α]})#λ] with KleisliApplicative[F, R] with KleisliPlusEmpty[F, R] {
+  implicit def kleisliApplicativePlus[F[+_], R](implicit F0: ApplicativePlus[F]): ApplicativePlus[({type λ[+α] = Kleisli[F, R, α]})#λ] = new ApplicativePlus[({type λ[+α] = Kleisli[F, R, α]})#λ] with KleisliApplicative[F, R] with KleisliPlusEmpty[F, R] {
     implicit def F: ApplicativePlus[F] = F0
   }
   implicit def kleisliArrId[F[+_]](implicit F0: Pointed[F]) = new KleisliArrIdArr[F] {
@@ -171,7 +171,7 @@ import Kleisli.kleisli
 // * -> *
 //
 
-private[scalaz] trait KleisliFunctor[F[+_], R] extends Functor[({type λ[α] = Kleisli[F, R, α]})#λ] {
+private[scalaz] trait KleisliFunctor[F[+_], R] extends Functor[({type λ[+α] = Kleisli[F, R, α]})#λ] {
   implicit def F: Functor[F]
 
   override def map[A, B](fa: Kleisli[F, R, A])(f: A => B): Kleisli[F, R, B] = fa map f
@@ -183,19 +183,19 @@ private[scalaz] trait KleisliPointed[F[+_], R] extends Pointed[({type λ[α] = K
   def point[A](a: => A): Kleisli[F, R, A] = kleisli((r: R) => F.point(a))
 }
 
-private[scalaz] trait KleisliApply[F[+_], R] extends Apply[({type λ[α] = Kleisli[F, R, α]})#λ] with KleisliFunctor[F, R] {
+private[scalaz] trait KleisliApply[F[+_], R] extends Apply[({type λ[+α] = Kleisli[F, R, α]})#λ] with KleisliFunctor[F, R] {
   implicit def F: Apply[F]
   override def ap[A, B](fa: => Kleisli[F, R, A])(f: => Kleisli[F, R, (A) => B]): Kleisli[F, R, B] = Kleisli[F, R, B](r => F.ap(fa(r))(f(r)))
 }
 
-private[scalaz] trait KleisliDistributive[F[+_], R] extends Distributive[({type λ[α] = Kleisli[F, R, α]})#λ] with KleisliFunctor[F, R] {
+private[scalaz] trait KleisliDistributive[F[+_], R] extends Distributive[({type λ[+α] = Kleisli[F, R, α]})#λ] with KleisliFunctor[F, R] {
   implicit def F: Distributive[F]
 
-  override def distributeImpl[G[_]: Functor, A, B](a: G[A])(f: A => Kleisli[F, R, B]): Kleisli[F, R, G[B]] =
+  override def distributeImpl[G[+_]: Functor, A, B](a: G[A])(f: A => Kleisli[F, R, B]): Kleisli[F, R, G[B]] =
     Kleisli(r => F.distribute(a)(f(_) run r))
 }
 
-private[scalaz] trait KleisliApplicative[F[+_], R] extends Applicative[({type λ[α] = Kleisli[F, R, α]})#λ] with KleisliApply[F, R] with KleisliPointed[F, R]{
+private[scalaz] trait KleisliApplicative[F[+_], R] extends Applicative[({type λ[+α] = Kleisli[F, R, α]})#λ] with KleisliApply[F, R] with KleisliPointed[F, R]{
   implicit def F: Applicative[F]
 }
 

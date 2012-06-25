@@ -1,7 +1,7 @@
 package scalaz
 
 trait ComonadTrans[F[_[_], _]] {
-  def lower[G[_]: Cobind, A](a: F[G, A]): G[A]
+  def lower[G[+_]: Cobind, A](a: F[G, A]): G[A]
 }
 
 object ComonadTrans {
@@ -9,5 +9,5 @@ object ComonadTrans {
 }
 
 trait Cohoist[F[_[_], _]] extends ComonadTrans[F] {
-  def cohoist[M[_], N[_]: Comonad](f: M ~> N): ({type f[x] = F[M, x]})#f ~> ({type f[x] = F[N, x]})#f
+  def cohoist[M[+_], N[+_]: Comonad](f: M ~> N): ({type λ[α] = F[M, α]})#λ ~> ({type λ[α] = F[N, α]})#λ
 }

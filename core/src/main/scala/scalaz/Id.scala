@@ -29,9 +29,9 @@ trait IdInstances {
 
       def cozip[A, B](a: Id[Either[A, B]]): Either[A, B] = a
 
-      def traverseImpl[G[_] : Applicative, A, B](fa: Id[A])(f: (A) => G[B]): G[Id[B]] = f(fa)
+      def traverseImpl[G[+_] : Applicative, A, B](fa: Id[A])(f: (A) => G[B]): G[Id[B]] = f(fa)
 
-      def distributeImpl[G[_] : Functor, A, B](fa: G[A])(f: (A) => Id[B]): Id[G[B]] = Functor[G].map(fa)(f)
+      def distributeImpl[G[+_] : Functor, A, B](fa: G[A])(f: (A) => Id[B]): Id[G[B]] = Functor[G].map(fa)(f)
 
       override def foldRight[A, B](fa: Id[A], z: => B)(f: (A, => B) => B): B = f(fa, z)
 
@@ -52,10 +52,10 @@ trait IdInstances {
         f(fa)
       }
 
-      override def compose[G[_]](implicit G0: Applicative[G]): Applicative[G] = G0
+      override def compose[G[+_]](implicit G0: Applicative[G]): Applicative[G] = G0
 
       // TODO Fun compiler bug? "can't existentially abstract over parameterized type G"
-      // override def product1[G[_]](implicit G0: Applicative[G]): Applicative[G] = G0
+      // override def product1[G[+_]](implicit G0: Applicative[G]): Applicative[G] = G0
     }
 }
 

@@ -1,7 +1,7 @@
 package scalaz
 
 // Returns a list in order of key insertion.
-sealed trait InsertionMap[K, V] {
+sealed trait InsertionMap[K, +V] {
   private[scalaz] val assoc: Map[K, (V, Long)]
   private[scalaz] val next: Long
 
@@ -11,13 +11,13 @@ sealed trait InsertionMap[K, V] {
   def get(k: K): Option[V] =
     assoc get k map (_._1)
 
-  def getOr(k: K, v: => V): V =
+  def getOr[VV >: V](k: K, v: => VV): VV =
     get(k) getOrElse v
 
   def contains(k: K): Boolean =
     assoc contains k
 
-  def ^+^(k: K, v: V): InsertionMap[K, V] =
+  def ^+^[VV >: V](k: K, v: VV): InsertionMap[K, VV] =
     InsertionMap.build(assoc + ((k, (v, next))), next + 1L)
 
   def @-(k: K): (Option[V], InsertionMap[K, V]) =
@@ -112,8 +112,8 @@ trait InsertionMapFunctions {
 trait InsertionMapInstances {
   import Scalaz._
 
-  implicit def insertionMap[K]: Functor[({type λ[α]=InsertionMap[K, α]})#λ] =
-    new Functor[({type λ[α]=InsertionMap[K, α]})#λ] {
+  implicit def insertionMap[K]: Functor[({type λ[+α]=InsertionMap[K, α]})#λ] =
+    new Functor[({type λ[+α]=InsertionMap[K, α]})#λ] {
       def map[A, B](a: InsertionMap[K, A])(f: A => B) =
         a map f
     }

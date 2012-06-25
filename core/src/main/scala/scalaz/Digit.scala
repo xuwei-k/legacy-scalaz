@@ -85,16 +85,16 @@ trait DigitFunctions {
       case _ => mod10Digit(scala.math.abs(i) % 10)
     }
 
-  def longDigits[F[_]](digits: F[Digit])(implicit F: Foldable[F]): Long =
+  def longDigits[F[+_]](digits: F[Digit])(implicit F: Foldable[F]): Long =
     F.foldLeft(digits, 0L)((n, a) => n * 10L + (a: Digit))
 
   def digits[F[+_]](cs: F[Char])(implicit F: Functor[F]): OptionT[F, Digit] =
     OptionT(F.map(cs)(digitFromChar))
 
-  def digitsOr[F[_]](chars: F[Char], d: => Digit)(implicit F: Functor[F]): F[Digit] =
+  def digitsOr[F[+_]](chars: F[Char], d: => Digit)(implicit F: Functor[F]): F[Digit] =
     F.map(chars)(a => digitFromChar(a) getOrElse d)
 
-  def digitsCollapse[F[_]](chars: F[Char])(implicit F: MonadPlus[F]): F[Digit] =
+  def digitsCollapse[F[+_]](chars: F[Char])(implicit F: MonadPlus[F]): F[Digit] =
     F.bind(chars)(a => Digit.digitFromChar(a) match {
       case None    => F.empty[Digit]
       case Some(d) => F.point(d)

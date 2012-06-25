@@ -5,7 +5,7 @@ package syntax
 trait BitraverseOps[F[_, _],A, B] extends Ops[F[A, B]] {
   implicit def F: Bitraverse[F]
   ////
-  final def bitraverse[G[_], C, D](f: A => G[C], g: B => G[D])(implicit ap: Applicative[G]): G[F[C, D]] =
+  final def bitraverse[G[+_], C, D](f: A => G[C], g: B => G[D])(implicit ap: Applicative[G]): G[F[C, D]] =
       F.bitraverseImpl(self)(f, g)
 
   // Would be nice, but I'm not sure we can conjure UnapplyProduct implicitly, at least without multiple implicit
@@ -15,7 +15,7 @@ trait BitraverseOps[F[_, _],A, B] extends Ops[F[A, B]] {
 
   import Leibniz.===
 
-  final def bisequence[G[_], A1, B1](implicit G: Applicative[G], eva: A === G[A1], evb: B === G[B1]): G[F[A1, B1]] =
+  final def bisequence[G[+_], A1, B1](implicit G: Applicative[G], eva: A === G[A1], evb: B === G[B1]): G[F[A1, B1]] =
     bitraverse(fa => eva(fa), fb => evb(fb))
   ////
 }

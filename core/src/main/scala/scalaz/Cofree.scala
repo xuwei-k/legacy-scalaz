@@ -76,12 +76,12 @@ trait CofreeFunctions {
 }
 
 trait CofreeInstances {
-  implicit def cofreeComonad[S[+_]](implicit S0: Functor[S]): Comonad[({type f[x] = Cofree[S, x]})#f] = new CofreeComonad[S] {
+  implicit def cofreeComonad[S[+_]](implicit S0: Functor[S]): Comonad[({type λ[+α] = Cofree[S, α]})#λ] = new CofreeComonad[S] {
     implicit def S = S0
   }
 }
 
-private[scalaz] trait CofreeComonad[S[+_]] extends Comonad[({type f[x] = Cofree[S, x]})#f] {
+private[scalaz] trait CofreeComonad[S[+_]] extends Comonad[({type λ[+α] = Cofree[S, α]})#λ] {
   implicit def S: Functor[S]
 
   def copoint[A](p: Cofree[S, A]) = p.head

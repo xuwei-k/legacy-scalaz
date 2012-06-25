@@ -31,7 +31,7 @@ sealed trait BijectionT[F[+_], G[+_], A, B] { self =>
   def unary_~[H[+_]](implicit FF: Functor[H], evF: F[B] =:= H[B], evG: G[A] =:= Id[A]) : PLensT[H, A, B] =
     partial[H]
 
-  def bimap[C, X[_, _], D](g: Bijection[C, D])(implicit F: Bifunctor[X], evF: F[B] =:= Id[B], evG: G[A] =:= Id[A]): Bijection[X[A, C], X[B, D]] =
+  def bimap[C, X[+_, +_], D](g: Bijection[C, D])(implicit F: Bifunctor[X], evF: F[B] =:= Id[B], evG: G[A] =:= Id[A]): Bijection[X[A, C], X[B, D]] =
     bijection(
       F.bimap(_)(to(_), g.to(_)): Id[X[B, D]]
     , F.bimap(_)(from(_), g.from(_)): Id[X[A, C]]

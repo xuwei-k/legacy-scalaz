@@ -40,7 +40,7 @@ trait Functor[F[+_]]  { self =>
   }
 
   /**The product of Functors `F` and `G`, `[x](F[x], G[x]])`, is a Functor */
-  def product[G[_]](implicit G0: Functor[G]): Functor[({type λ[α] = (F[α], G[α])})#λ] = new ProductFunctor[F, G] {
+  def product[G[+_]](implicit G0: Functor[G]): Functor[({type λ[+α] = (F[α], G[α])})#λ] = new ProductFunctor[F, G] {
     implicit def F = self
 
     implicit def G = G0
@@ -56,7 +56,7 @@ trait Functor[F[+_]]  { self =>
 }
 
 object Functor {
-  @inline def apply[F[_]](implicit F: Functor[F]): Functor[F] = F
+  @inline def apply[F[+_]](implicit F: Functor[F]): Functor[F] = F
 
   ////
 

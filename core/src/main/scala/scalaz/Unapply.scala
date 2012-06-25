@@ -234,7 +234,7 @@ object Unapply2 extends Unapply2_0 {
 }
 
 trait UnapplyProduct[TC[_[_]], MA, MB] {
-  type M[X]
+  type M[+X]
   type A
   type B
   def TC: TC[M]

@@ -1,6 +1,6 @@
 package scalaz
 
-trait ComonadStore[F[_, _], S] extends Comonad[({type f[x]=F[S,x]})#f] {
+trait ComonadStore[F[_, _], S] extends Comonad[({type λ[+α]=F[S,α]})#λ] {
   def pos[A](w: F[S, A]): S
   def peek[A](s: S, w: F[S, A]): A
   def peeks[A](s: S => S, w: F[S, A]): A

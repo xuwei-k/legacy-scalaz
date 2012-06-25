@@ -1,12 +1,12 @@
 package scalaz
 
-sealed trait LazyTuple2[A, B] {
+sealed trait LazyTuple2[+A, +B] {
   def _1: A
 
   def _2: B
 }
 
-sealed trait LazyTuple3[A, B, C] {
+sealed trait LazyTuple3[+A, +B, +C] {
   def _1: A
 
   def _2: B
@@ -14,7 +14,7 @@ sealed trait LazyTuple3[A, B, C] {
   def _3: C
 }
 
-sealed trait LazyTuple4[A, B, C, D] {
+sealed trait LazyTuple4[+A, +B, +C, +D] {
   def _1: A
 
   def _2: B
@@ -91,7 +91,7 @@ trait LazyTuple2Instances1 {
     implicit def _2 = A2
   }
 
-  implicit def lazyTuple2Functor[A1]: Functor[({type f[x] = LazyTuple2[A1, x]})#f] = new LazyTuple2Functor[A1] {}
+  implicit def lazyTuple2Functor[A1]: Functor[({type λ[+α] = LazyTuple2[A1, α]})#λ] = new LazyTuple2Functor[A1] {}
 }
 trait LazyTuple2Instances0 extends LazyTuple2Instances1 {
 
@@ -110,7 +110,7 @@ trait LazyTuple2Instances0 extends LazyTuple2Instances1 {
     implicit def _2 = A2
   }
 
-  implicit def lazyTuple2Monad[A1](implicit A1: Monoid[A1]): Monad[({type f[x] = LazyTuple2[A1, x]})#f] = new LazyTuple2Monad[A1] {
+  implicit def lazyTuple2Monad[A1](implicit A1: Monoid[A1]): Monad[({type λ[+α] = LazyTuple2[A1, α]})#λ] = new LazyTuple2Monad[A1] {
     implicit def _1 = A1
   }
 }
@@ -129,7 +129,7 @@ trait LazyTuple3Instances1 {
     implicit def _3 = A3
   }
 
-  implicit def lazyTuple3Functor[A1, A2]: Functor[({type f[x] = LazyTuple3[A1, A2, x]})#f] = new LazyTuple3Functor[A1, A2] {}
+  implicit def lazyTuple3Functor[A1, A2]: Functor[({type λ[+α] = LazyTuple3[A1, A2, α]})#λ] = new LazyTuple3Functor[A1, A2] {}
 
   implicit def lazyTuple3Equal[A1, A2, A3](implicit A1: Equal[A1], A2: Equal[A2], A3: Equal[A3]) = new LazyTuple3Equal[A1, A2, A3] {
     implicit def _1 = A1
@@ -157,7 +157,7 @@ trait LazyTuple3Instances0 extends LazyTuple3Instances1 {
     implicit def _3 = A3
   }
 
-  implicit def lazyTuple3Monad[A1, A2](implicit A1: Monoid[A1], A2: Monoid[A2]): Monad[({type f[x] = LazyTuple3[A1, A2, x]})#f] = new LazyTuple3Monad[A1, A2] {
+  implicit def lazyTuple3Monad[A1, A2](implicit A1: Monoid[A1], A2: Monoid[A2]): Monad[({type λ[α] = LazyTuple3[A1, A2, α]})#λ] = new LazyTuple3Monad[A1, A2] {
     implicit def _1 = A1
     implicit def _2 = A2
   }
@@ -179,7 +179,7 @@ trait LazyTuple4Instances1 {
     implicit def _4 = A4
   }
 
-  implicit def lazyTuple4Functor[A1, A2, A3]: Functor[({type f[x] = LazyTuple4[A1, A2, A3, x]})#f] = new LazyTuple4Functor[A1, A2, A3] {}
+  implicit def lazyTuple4Functor[A1, A2, A3]: Functor[({type λ[+α] = LazyTuple4[A1, A2, A3, α]})#λ] = new LazyTuple4Functor[A1, A2, A3] {}
 
   implicit def lazyTuple4Equal[A1, A2, A3, A4](implicit A1: Equal[A1], A2: Equal[A2], A3: Equal[A3], A4: Equal[A4]) = new LazyTuple4Equal[A1, A2, A3, A4] {
     implicit def _1 = A1
@@ -211,7 +211,7 @@ trait LazyTuple4Instances0 extends LazyTuple4Instances1 {
     implicit def _4 = A4
   }
 
-  implicit def lazyTuple4Monad[A1, A2, A3](implicit A1: Monoid[A1], A2: Monoid[A2], A3: Monoid[A3]): Monad[({type f[x] = LazyTuple4[A1, A2, A3, x]})#f] = new LazyTuple4Monad[A1, A2, A3] {
+  implicit def lazyTuple4Monad[A1, A2, A3](implicit A1: Monoid[A1], A2: Monoid[A2], A3: Monoid[A3]): Monad[({type λ[+α] = LazyTuple4[A1, A2, A3, α]})#λ] = new LazyTuple4Monad[A1, A2, A3] {
     implicit def _1 = A1
     implicit def _2 = A2
     implicit def _3 = A3
@@ -229,15 +229,15 @@ trait LazyTuple4Instances extends LazyTuple4Instances0 {
 
 ////
 
-private[scalaz] trait LazyTuple2Functor[A1] extends Functor[({type f[x] = LazyTuple2[A1, x]})#f] {
+private[scalaz] trait LazyTuple2Functor[A1] extends Functor[({type λ[+α] = LazyTuple2[A1, α]})#λ] {
   override def map[A, B](fa: LazyTuple2[A1, A])(f: A => B) =
     LazyTuple2(fa._1, f(fa._2))
 }
-private[scalaz] trait LazyTuple3Functor[A1, A2] extends Functor[({type f[x] = LazyTuple3[A1, A2, x]})#f] {
+private[scalaz] trait LazyTuple3Functor[A1, A2] extends Functor[({type λ[+α] = LazyTuple3[A1, A2, α]})#λ] {
   override def map[A, B](fa: LazyTuple3[A1, A2, A])(f: A => B) =
     LazyTuple3(fa._1, fa._2, f(fa._3))
 }
-private[scalaz] trait LazyTuple4Functor[A1, A2, A3] extends Functor[({type f[x] = LazyTuple4[A1, A2, A3, x]})#f] {
+private[scalaz] trait LazyTuple4Functor[A1, A2, A3] extends Functor[({type λ[+α] = LazyTuple4[A1, A2, A3, α]})#λ] {
   override def map[A, B](fa: LazyTuple4[A1, A2, A3, A])(f: A => B) =
     LazyTuple4(fa._1, fa._2, fa._3, f(fa._4))
 }
@@ -398,7 +398,7 @@ private[scalaz] trait LazyTuple4Group[A1, A2, A3, A4] extends Group[LazyTuple4[A
 
 // LazyTupleN forms a Monad if the element types other than the last are Monoids.
 
-private[scalaz] trait LazyTuple2Monad[A1] extends Monad[({type f[x] = LazyTuple2[A1, x]})#f] with LazyTuple2Functor[A1] {
+private[scalaz] trait LazyTuple2Monad[A1] extends Monad[({type λ[+α] = LazyTuple2[A1, α]})#λ] with LazyTuple2Functor[A1] {
   implicit def _1 : Monoid[A1]
   def bind[A, B](fa: LazyTuple2[A1, A])(f: A => LazyTuple2[A1, B]) = {
     val t = f(fa._2)
@@ -407,7 +407,7 @@ private[scalaz] trait LazyTuple2Monad[A1] extends Monad[({type f[x] = LazyTuple2
   }
   def point[A](a: => A) = lazyTuple2(_1.zero, a)
 }
-private[scalaz] trait LazyTuple3Monad[A1, A2] extends Monad[({type f[x] = LazyTuple3[A1, A2, x]})#f] with LazyTuple3Functor[A1, A2] {
+private[scalaz] trait LazyTuple3Monad[A1, A2] extends Monad[({type λ[+α] = LazyTuple3[A1, A2, α]})#λ] with LazyTuple3Functor[A1, A2] {
   implicit def _1 : Monoid[A1]
   implicit def _2 : Monoid[A2]
   def bind[A, B](fa: LazyTuple3[A1, A2, A])(f: A => LazyTuple3[A1, A2, B]) = {
@@ -418,7 +418,7 @@ private[scalaz] trait LazyTuple3Monad[A1, A2] extends Monad[({type f[x] = LazyTu
 
   def point[A](a: => A) = lazyTuple3(_1.zero, _2.zero, a)
 }
-private[scalaz] trait LazyTuple4Monad[A1, A2, A3] extends Monad[({type f[x] = LazyTuple4[A1, A2, A3, x]})#f] with LazyTuple4Functor[A1, A2, A3] {
+private[scalaz] trait LazyTuple4Monad[A1, A2, A3] extends Monad[({type λ[+α] = LazyTuple4[A1, A2, A3, α]})#λ] with LazyTuple4Functor[A1, A2, A3] {
   implicit def _1 : Monoid[A1]
   implicit def _2 : Monoid[A2]
   implicit def _3 : Monoid[A3]

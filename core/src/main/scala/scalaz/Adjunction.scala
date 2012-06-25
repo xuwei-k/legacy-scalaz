@@ -47,7 +47,7 @@ abstract class Adjunction[F[+_], G[+_]](implicit val F: Functor[F], val G: Funct
   }
 
   /** Every adjunction gives rise to a comonad. */
-  implicit val comonad: Comonad[({type λ[α] = F[G[α]]})#λ] = new Comonad[({type λ[α] = F[G[α]]})#λ] {
+  implicit val comonad: Comonad[({type λ[+α] = F[G[α]]})#λ] = new Comonad[({type λ[+α] = F[G[α]]})#λ] {
     def copoint[A](a: F[G[A]]) = counit(a)
     def cobind[A,B](a: F[G[A]])(f: F[G[A]] => B): F[G[B]] = F.map(a)(leftAdjunct(_)(f))
     def map[A,B](a: F[G[A]])(f: A => B) = cobind(a)(x => f(counit(x)))

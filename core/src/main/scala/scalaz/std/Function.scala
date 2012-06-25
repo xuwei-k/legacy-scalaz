@@ -65,7 +65,7 @@ trait FunctionInstances extends FunctionInstances0 {
     def unzip[A, B](a: T => (A, B)) =
       (a(_)._1, a(_)._2)
 
-    def distributeImpl[G[_]:Functor,A,B](fa: G[A])(f: A => T => B): T => G[B] =
+    def distributeImpl[G[+_]:Functor,A,B](fa: G[A])(f: A => T => B): T => G[B] =
       t => Functor[G].map(fa)(a => f(a)(t))
 
   }

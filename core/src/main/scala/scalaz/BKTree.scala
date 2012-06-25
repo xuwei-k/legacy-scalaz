@@ -29,12 +29,6 @@ sealed trait BKTree[A] {
       case BKTreeNode(_, _, _) => false
     }
 
-  def map[B](f: A => B): BKTree[B] =
-    this match {
-      case BKTreeEmpty()       => BKTreeEmpty()
-      case BKTreeNode(a, s, c) => BKTreeNode(f(a), s, c.transform((_: Int, z: BKTree[A]) => z map f))
-    }
-
   def size: Int =
     this match {
       case BKTreeEmpty()       => 0
@@ -156,8 +150,7 @@ trait BKTreeFunctions {
 }
 
 trait BKTreeInstances {
-  implicit def bKTreeInstance: Functor[BKTree] with Length[BKTree] = new Functor[BKTree] with Length[BKTree] {
-    def map[A, B](fa: BKTree[A])(f: (A) => B): BKTree[B] = fa map f
+  implicit def bKTreeInstance: Length[BKTree] = new Length[BKTree] {
     def length[A](fa: BKTree[A]): Int = fa.size
   }
   implicit def bKTreeMonoid[A: MetricSpace]: Monoid[BKTree[A]] = new Monoid[BKTree[A]] {
