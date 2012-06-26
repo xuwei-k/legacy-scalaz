@@ -5,7 +5,7 @@ package scalaz
  *
  */
 ////
-trait Bifoldable[F[_, _]]  { self =>
+trait Bifoldable[F[+_, +_]]  { self =>
   ////
 
   def bifoldMap[A,B,M](fa: F[A, B])(f: A => M)(g: B => M)(implicit F: Monoid[M]): M
@@ -20,14 +20,14 @@ trait Bifoldable[F[_, _]]  { self =>
   }
 
   /**The composition of Bifoldables `F` and `G`, `[x,y]F[G[x,y],G[x,y]]`, is a Bifoldable */
-  def compose[G[_, _]](implicit G0: Bifoldable[G]): Bifoldable[({type λ[α, β]=F[G[α, β], G[α, β]]})#λ] = new CompositionBifoldable[F, G] {
+  def compose[G[+_, +_]](implicit G0: Bifoldable[G]): Bifoldable[({type λ[+α, +β]=F[G[α, β], G[α, β]]})#λ] = new CompositionBifoldable[F, G] {
     implicit def F = self
 
     implicit def G = G0
   }
 
   /**The product of Bifoldables `F` and `G`, `[x,y]F[G[x,y],G[x,y]]`, is a Bifoldable */
-  def product[G[_, _]](implicit G0: Bifoldable[G]): Bifoldable[({type λ[α, β]=(F[α, β], G[α, β])})#λ] = new ProductBifoldable[F, G] {
+  def product[G[+_, +_]](implicit G0: Bifoldable[G]): Bifoldable[({type λ[+α, +β]=(F[α, β], G[α, β])})#λ] = new ProductBifoldable[F, G] {
     implicit def F = self
 
     implicit def G = G0
@@ -52,13 +52,13 @@ trait Bifoldable[F[_, _]]  { self =>
 }
 
 object Bifoldable {
-  @inline def apply[F[_, _]](implicit F: Bifoldable[F]): Bifoldable[F] = F
+  @inline def apply[F[+_, +_]](implicit F: Bifoldable[F]): Bifoldable[F] = F
 
   ////
   /**
    * Template trait to define `Bifoldable` in terms of `bifoldMap`.
    */
-  trait FromBifoldMap[F[_, _]] extends Bifoldable[F] {
+  trait FromBifoldMap[F[+_, +_]] extends Bifoldable[F] {
     override def bifoldRight[A,B,C](fa: F[A, B], z: => C)(f: (A, => C) => C)(g: (B, => C) => C) =
       bifoldMap(fa)((a: A) => (Endo.endo(f(a, _: C))))((b: B) => (Endo.endo(g(b, _: C)))) apply z
   }
@@ -66,7 +66,7 @@ object Bifoldable {
   /**
    * Template trait to define `Foldable` in terms of `foldr`
    */
-  trait FromBifoldr[F[_, _]] extends Bifoldable[F] {
+  trait FromBifoldr[F[+_, +_]] extends Bifoldable[F] {
     override def bifoldMap[A, B, M](fa: F[A, B])(f: A => M)(g: B => M)(implicit F: Monoid[M]) =
       bifoldR(fa, F.zero)(x => y => F.append(f(x),  y))(x => y => F.append(g(x),  y))
   }

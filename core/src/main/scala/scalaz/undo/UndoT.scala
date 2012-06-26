@@ -119,7 +119,7 @@ private[scalaz] trait UndoTFunctor[S, F[+_]]
 }
 
 private[scalaz] trait UndoTPointed[S, F[+_]]
-  extends Pointed[({type G[x] = UndoT[F, S, x]})#G]
+  extends Pointed[({type G[+x] = UndoT[F, S, x]})#G]
   with UndoTFunctor[S, F] {
 
   implicit def F: Pointed[F]
@@ -149,7 +149,7 @@ private[scalaz] trait UndoTMonadState[S, F[+_]]
 private[scalaz] trait UndoTHoist[S] extends Hoist[({type G[x[+_], a] = UndoT[x, S, a]})#G] {
 
   trait UndoTF[G[+_], S] {
-    type λ[α] = UndoT[G, S, α]
+    type λ[+α] = UndoT[G, S, α]
   }
 
   def hoist[M[+_]: Monad, N[+_]](f: M ~> N) = new (UndoTF[M, S]#λ ~> UndoTF[N, S]#λ) {

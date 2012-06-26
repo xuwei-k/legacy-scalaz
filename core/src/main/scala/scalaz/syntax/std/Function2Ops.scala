@@ -9,7 +9,7 @@ trait Function2Ops[T1, T2, R] extends Ops[(T1, T2) => R] {
 
   def contramap[TT](f: TT => T1)(implicit ev: T1 =:= T2): (TT, TT) => R = (t1, t2) => self(f(t1), ev(f(t2)))
 
-  def lift[F[_]](implicit F: Applicative[F]): (F[T1], F[T2]) => F[R] = F.lift2(self)
+  def lift[F[+_]](implicit F: Applicative[F]): (F[T1], F[T2]) => F[R] = F.lift2(self)
 
   def byName: (=> T1, => T2) => R = (t1, t2) => self(t1, t2)
 }

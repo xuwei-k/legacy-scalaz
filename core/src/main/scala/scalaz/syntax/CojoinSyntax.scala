@@ -2,7 +2,7 @@ package scalaz
 package syntax
 
 /** Wraps a value `self` and provides methods related to `Cojoin` */
-trait CojoinOps[F[_],A] extends Ops[F[A]] {
+trait CojoinOps[F[+_],A] extends Ops[F[A]] {
   implicit def F: Cojoin[F]
   ////
   final def cojoin: F[F[A]] = F.cojoin(self)
@@ -16,7 +16,7 @@ trait ToCojoinOps0 {
 }
 
 trait ToCojoinOps extends ToCojoinOps0 {
-  implicit def ToCojoinOps[F[_],A](v: F[A])(implicit F0: Cojoin[F]) =
+  implicit def ToCojoinOps[F[+_],A](v: F[A])(implicit F0: Cojoin[F]) =
     new CojoinOps[F,A] { def self = v; implicit def F: Cojoin[F] = F0 }
 
   ////
@@ -24,7 +24,7 @@ trait ToCojoinOps extends ToCojoinOps0 {
   ////
 }
 
-trait CojoinSyntax[F[_]]  {
+trait CojoinSyntax[F[+_]]  {
   implicit def ToCojoinOps[A](v: F[A])(implicit F0: Cojoin[F]): CojoinOps[F, A] = new CojoinOps[F,A] { def self = v; implicit def F: Cojoin[F] = F0 }
 
   ////

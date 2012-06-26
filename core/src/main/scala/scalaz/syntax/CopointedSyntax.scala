@@ -2,7 +2,7 @@ package scalaz
 package syntax
 
 /** Wraps a value `self` and provides methods related to `Copointed` */
-trait CopointedOps[F[_],A] extends Ops[F[A]] {
+trait CopointedOps[F[+_],A] extends Ops[F[A]] {
   implicit def F: Copointed[F]
   ////
   def copoint: A = F.copoint(self)
@@ -17,7 +17,7 @@ trait ToCopointedOps0 {
 }
 
 trait ToCopointedOps extends ToCopointedOps0 with ToFunctorOps {
-  implicit def ToCopointedOps[F[_],A](v: F[A])(implicit F0: Copointed[F]) =
+  implicit def ToCopointedOps[F[+_],A](v: F[A])(implicit F0: Copointed[F]) =
     new CopointedOps[F,A] { def self = v; implicit def F: Copointed[F] = F0 }
 
   ////
@@ -25,7 +25,7 @@ trait ToCopointedOps extends ToCopointedOps0 with ToFunctorOps {
   ////
 }
 
-trait CopointedSyntax[F[_]] extends FunctorSyntax[F] {
+trait CopointedSyntax[F[+_]] extends FunctorSyntax[F] {
   implicit def ToCopointedOps[A](v: F[A])(implicit F0: Copointed[F]): CopointedOps[F, A] = new CopointedOps[F,A] { def self = v; implicit def F: Copointed[F] = F0 }
 
   ////

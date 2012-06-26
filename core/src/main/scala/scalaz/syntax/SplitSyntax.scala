@@ -2,7 +2,7 @@ package scalaz
 package syntax
 
 /** Wraps a value `self` and provides methods related to `Split` */
-trait SplitOps[F[_, _],A, B] extends Ops[F[A, B]] {
+trait SplitOps[F[+_, +_],A, B] extends Ops[F[A, B]] {
   implicit def F: Split[F]
   ////
   final def -*-[C, D](k: F[C, D]): F[(A, C), (B, D)] =
@@ -18,18 +18,18 @@ trait ToSplitOps0 {
 
 trait ToSplitOps extends ToSplitOps0 with ToCategoryOps {
   
-  implicit def ToSplitOps[F[_, _],A, B](v: F[A, B])(implicit F0: Split[F]) =
+  implicit def ToSplitOps[F[+_, +_],A, B](v: F[A, B])(implicit F0: Split[F]) =
       new SplitOps[F,A, B] { def self = v; implicit def F: Split[F] = F0 }
   
 
   ////
-  implicit def ToComposeVFromKleisliLike[G[_], F[G[_], _, _],A, B](v: F[G, A, B])(implicit F0: Split[({type λ[α, β]=F[G, α, β]})#λ]) =
-        new SplitOps[({type λ[α, β]=F[G, α, β]})#λ, A, B] { def self = v; implicit def F: Split[({type λ[α, β]=F[G, α, β]})#λ] = F0 }
+  implicit def ToComposeVFromKleisliLike[G[_], F[G[_], _, _],A, B](v: F[G, A, B])(implicit F0: Split[({type λ[+α, +β]=F[G, α, β]})#λ]) =
+        new SplitOps[({type λ[+α, +β]=F[G, α, β]})#λ, A, B] { def self = v; implicit def F: Split[({type λ[+α, +β]=F[G, α, β]})#λ] = F0 }
 
   ////
 }
 
-trait SplitSyntax[F[_, _]] extends CategorySyntax[F] {
+trait SplitSyntax[F[+_, +_]] extends CategorySyntax[F] {
   implicit def ToSplitOps[A, B](v: F[A, B])(implicit F0: Split[F]): SplitOps[F, A, B] = new SplitOps[F, A, B] { def self = v; implicit def F: Split[F] = F0 }
 
   ////

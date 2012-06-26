@@ -2,7 +2,7 @@ package scalaz
 package syntax
 
 /** Wraps a value `self` and provides methods related to `Zip` */
-trait ZipOps[F[_],A] extends Ops[F[A]] {
+trait ZipOps[F[+_],A] extends Ops[F[A]] {
   implicit def F: Zip[F]
   ////
   final def fzip[B](b: => F[B]): F[(A, B)] = F.zip(self, b)
@@ -20,7 +20,7 @@ trait ToZipOps0 {
 }
 
 trait ToZipOps extends ToZipOps0 {
-  implicit def ToZipOps[F[_],A](v: F[A])(implicit F0: Zip[F]) =
+  implicit def ToZipOps[F[+_],A](v: F[A])(implicit F0: Zip[F]) =
     new ZipOps[F,A] { def self = v; implicit def F: Zip[F] = F0 }
 
   ////
@@ -28,7 +28,7 @@ trait ToZipOps extends ToZipOps0 {
   ////
 }
 
-trait ZipSyntax[F[_]]  {
+trait ZipSyntax[F[+_]]  {
   implicit def ToZipOps[A](v: F[A])(implicit F0: Zip[F]): ZipOps[F, A] = new ZipOps[F,A] { def self = v; implicit def F: Zip[F] = F0 }
 
   ////

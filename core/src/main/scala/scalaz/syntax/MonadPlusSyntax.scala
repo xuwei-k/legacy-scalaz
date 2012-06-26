@@ -2,7 +2,7 @@ package scalaz
 package syntax
 
 /** Wraps a value `self` and provides methods related to `MonadPlus` */
-trait MonadPlusOps[F[_],A] extends Ops[F[A]] {
+trait MonadPlusOps[F[+_],A] extends Ops[F[A]] {
   implicit def F: MonadPlus[F]
   ////
   import Liskov._
@@ -28,7 +28,7 @@ trait ToMonadPlusOps0 {
 }
 
 trait ToMonadPlusOps extends ToMonadPlusOps0 with ToMonadOps with ToApplicativePlusOps {
-  implicit def ToMonadPlusOps[F[_],A](v: F[A])(implicit F0: MonadPlus[F]) =
+  implicit def ToMonadPlusOps[F[+_],A](v: F[A])(implicit F0: MonadPlus[F]) =
     new MonadPlusOps[F,A] { def self = v; implicit def F: MonadPlus[F] = F0 }
 
   ////
@@ -36,7 +36,7 @@ trait ToMonadPlusOps extends ToMonadPlusOps0 with ToMonadOps with ToApplicativeP
   ////
 }
 
-trait MonadPlusSyntax[F[_]] extends MonadSyntax[F] with ApplicativePlusSyntax[F] {
+trait MonadPlusSyntax[F[+_]] extends MonadSyntax[F] with ApplicativePlusSyntax[F] {
   implicit def ToMonadPlusOps[A](v: F[A])(implicit F0: MonadPlus[F]): MonadPlusOps[F, A] = new MonadPlusOps[F,A] { def self = v; implicit def F: MonadPlus[F] = F0 }
 
   ////

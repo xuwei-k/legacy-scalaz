@@ -1,7 +1,7 @@
 package scalaz
 package undo
 
-case class History[S](current: S, undos: List[S] = Nil, redos: List[S] = Nil)
+case class History[+S](current: S, undos: List[S] = Nil, redos: List[S] = Nil)
 
 trait HistoryInstances {
   implicit def history: Functor[History] = new Pointed[History] {

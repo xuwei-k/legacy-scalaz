@@ -2,7 +2,7 @@ package scalaz
 package syntax
 
 /** Wraps a value `self` and provides methods related to `Unzip` */
-trait UnzipOps[F[_],A] extends Ops[F[A]] {
+trait UnzipOps[F[+_],A] extends Ops[F[A]] {
   implicit def F: Unzip[F]
   ////
   ////
@@ -15,14 +15,14 @@ trait ToUnzipOps0 {
 }
 
 trait ToUnzipOps extends ToUnzipOps0 {
-  implicit def ToUnzipOps[F[_],A](v: F[A])(implicit F0: Unzip[F]) =
+  implicit def ToUnzipOps[F[+_],A](v: F[A])(implicit F0: Unzip[F]) =
     new UnzipOps[F,A] { def self = v; implicit def F: Unzip[F] = F0 }
 
   ////
-  implicit def ToUnzipPairOps[F[_],A,B](v: F[(A, B)])(implicit F0: Unzip[F]) =
+  implicit def ToUnzipPairOps[F[+_],A,B](v: F[(A, B)])(implicit F0: Unzip[F]) =
     new UnzipPairOps[F,A,B] { def self = v; implicit def F: Unzip[F] = F0 }
 
-  trait UnzipPairOps[F[_],A, B] extends Ops[F[(A, B)]] {
+  trait UnzipPairOps[F[+_],A, B] extends Ops[F[(A, B)]] {
     implicit def F: Unzip[F]
     def unfzip: (F[A], F[B]) =
       F.unzip(self)
@@ -37,7 +37,7 @@ trait ToUnzipOps extends ToUnzipOps0 {
   ////
 }
 
-trait UnzipSyntax[F[_]]  {
+trait UnzipSyntax[F[+_]]  {
   implicit def ToUnzipOps[A](v: F[A])(implicit F0: Unzip[F]): UnzipOps[F, A] = new UnzipOps[F,A] { def self = v; implicit def F: Unzip[F] = F0 }
 
   ////
