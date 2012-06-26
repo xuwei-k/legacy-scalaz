@@ -5,7 +5,7 @@ package scalaz
  * @see [[scalaz.Monad.MonadLaw]]
  */
 ////
-trait Monad[F[_]] extends Applicative[F] with Bind[F] { self =>
+trait Monad[F[+_]] extends Applicative[F] with Bind[F] { self =>
   ////
 
   override def map[A,B](fa: F[A])(f: A => B) = bind(fa)(a => point(f(a)))
@@ -22,15 +22,15 @@ trait Monad[F[_]] extends Applicative[F] with Bind[F] { self =>
 }
 
 object Monad {
-  @inline def apply[F[_]](implicit F: Monad[F]): Monad[F] = F
+  @inline def apply[F[+_]](implicit F: Monad[F]): Monad[F] = F
 
   ////
 
   /** Performs the action  */
-  def replicateM[F[_], G[_], A](a: F[A], n: Int)(implicit F: Monad[F], G: Traverse[G], P: Pointed[G], M: Monoid[G[F[A]]]): F[G[A]] =
+  def replicateM[F[+_], G[+_], A](a: F[A], n: Int)(implicit F: Monad[F], G: Traverse[G], P: Pointed[G], M: Monoid[G[F[A]]]): F[G[A]] =
     G.sequence(Monoid.replicate[G, F[A]](a)(n))
 
-  def replicateM_[F[_], A](a: F[A], n: Int)(implicit F: Monad[F]): F[Unit] =
+  def replicateM_[F[+_], A](a: F[A], n: Int)(implicit F: Monad[F]): F[Unit] =
     if (n <= 0) F.point(()) else if (n == 1) F.point(a) else F.bind(F.point(a))(_ => replicateM_(a, n - 1))
 
   ////

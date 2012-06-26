@@ -23,7 +23,7 @@ trait VectorInstances extends VectorInstances0 {
     def zip[A, B](a: => Vector[A], b: => Vector[B]) = a zip b
     def unzip[A, B](a: Vector[(A, B)]) = a.unzip
 
-    def traverseImpl[F[_], A, B](v: Vector[A])(f: A => F[B])(implicit F: Applicative[F]) = {
+    def traverseImpl[F[+_], A, B](v: Vector[A])(f: A => F[B])(implicit F: Applicative[F]) = {
       DList.fromList(v.toList).foldr(F.point(Vector[B]())) {
          (a, fbs) => F.map2(f(a), fbs)(_ +: _)
       }
@@ -99,20 +99,20 @@ trait VectorFunctions {
   final def <^>[A, B: Monoid](as: Vector[A])(f: NonEmptyList[A] => B): B =
     if (as.isEmpty) Monoid[B].zero else f(NonEmptyList.nel(as.head, as.tail.toList))
 
-  final def takeWhileM[A, M[_] : Monad](as: Vector[A])(p: A => M[Boolean]): M[Vector[A]] =
+  final def takeWhileM[A, M[+_] : Monad](as: Vector[A])(p: A => M[Boolean]): M[Vector[A]] =
     if (as.isEmpty) Monad[M].point(Vector()) else Monad[M].bind(p(as.head))(b =>
       if (b) Monad[M].map(takeWhileM(as.tail)(p))((tt: Vector[A]) => as.head +: tt) else Monad[M].point(Vector()))
 
-  final def takeUntilM[A, M[_] : Monad](as: Vector[A])(p: A => M[Boolean]): M[Vector[A]] =
+  final def takeUntilM[A, M[+_] : Monad](as: Vector[A])(p: A => M[Boolean]): M[Vector[A]] =
     takeWhileM(as)((a: A) => Monad[M].map(p(a))((b) => !b))
 
-  final def filterM[A, M[_] : Monad](as: Vector[A])(p: A => M[Boolean]): M[Vector[A]] =
+  final def filterM[A, M[+_] : Monad](as: Vector[A])(p: A => M[Boolean]): M[Vector[A]] =
     if (as.isEmpty) Monad[M].point(Vector()) else {
       def g = filterM(as.tail)(p)
       Monad[M].bind(p(as.head))(b => if (b) Monad[M].map(g)(tt => as.head +: tt) else g)
     }
   
-  final def findM[A, M[_] : Monad](as: Vector[A])(p: A => M[Boolean]): M[Option[A]] =
+  final def findM[A, M[+_] : Monad](as: Vector[A])(p: A => M[Boolean]): M[Option[A]] =
     if (as.isEmpty) Monad[M].point(None: Option[A]) else Monad[M].bind(p(as.head))(b =>
       if (b) Monad[M].point(Some(as.head): Option[A]) else findM(as.tail)(p))
 
@@ -122,7 +122,7 @@ trait VectorFunctions {
     filterM(as)(_ => Vector(true, false))
   }
 
-  final def partitionM[A, M[_] : Monad](as: Vector[A])(p: A => M[Boolean]): M[(Vector[A], Vector[A])] =
+  final def partitionM[A, M[+_] : Monad](as: Vector[A])(p: A => M[Boolean]): M[(Vector[A], Vector[A])] =
     if (as.isEmpty) Monad[M].point(Vector[A](), Vector[A]()) else
       Monad[M].bind(p(as.head))(b =>
         Monad[M].map(partitionM(as.tail)(p)) {
@@ -130,16 +130,16 @@ trait VectorFunctions {
         }
       )
 
-  final def spanM[A, M[_] : Monad](as: Vector[A])(p: A => M[Boolean]): M[(Vector[A], Vector[A])] =
+  final def spanM[A, M[+_] : Monad](as: Vector[A])(p: A => M[Boolean]): M[(Vector[A], Vector[A])] =
     if (as.isEmpty) Monad[M].point(Vector(), Vector()) else
       Monad[M].bind(p(as.head))(b =>
         if (b) Monad[M].map(spanM(as.tail)(p))((k: (Vector[A], Vector[A])) => (as.head +: k._1, k._2))
         else Monad[M].point(Vector(), as))
 
-  final def breakM[A, M[_] : Monad](as: Vector[A])(p: A => M[Boolean]): M[(Vector[A], Vector[A])] =
+  final def breakM[A, M[+_] : Monad](as: Vector[A])(p: A => M[Boolean]): M[(Vector[A], Vector[A])] =
     spanM(as)(a => Monad[M].map(p(a))((b: Boolean) => !b))
 
-  final def groupByM[A, M[_] : Monad](as: Vector[A])(p: (A, A) => M[Boolean]): M[Vector[Vector[A]]] =
+  final def groupByM[A, M[+_] : Monad](as: Vector[A])(p: (A, A) => M[Boolean]): M[Vector[Vector[A]]] =
     if (as.isEmpty) Monad[M].point(Vector()) else
       Monad[M].bind(spanM(as.tail)(p(as.head, _))) {
         case (x, y) =>

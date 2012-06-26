@@ -41,7 +41,7 @@ abstract class Adjunction[F[+_], G[+_]](implicit val F: Functor[F], val G: Funct
   }
 
   /** Every adjunction gives rise to a monad. */
-  implicit val monad: Monad[({type λ[α] = G[F[α]]})#λ] = new Monad[({type λ[α] = G[F[α]]})#λ] {
+  implicit val monad: Monad[({type λ[+α] = G[F[α]]})#λ] = new Monad[({type λ[+α] = G[F[α]]})#λ] {
     def point[A](a: => A) = unit(a)
     def bind[A,B](a: G[F[A]])(f: A => G[F[B]]) = G.map(a)(rightAdjunct(_)(f))
   }

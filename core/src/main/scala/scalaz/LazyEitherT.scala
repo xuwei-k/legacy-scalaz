@@ -273,7 +273,7 @@ trait LazyEitherTFoldable[F[+_], E] extends Foldable.FromFoldr[({type λ[α]=Laz
   def foldRight[A, B](fa: LazyEitherT[F, E, A], z: => B)(f: (A, => B) => B): B = fa.foldRight(z)(f)
 }
 
-trait LazyEitherTTraverse[F[+_], E] extends Traverse[({type λ[α]=LazyEitherT[F, E, α]})#λ] with LazyEitherTFoldable[F, E] {
+trait LazyEitherTTraverse[F[+_], E] extends Traverse[({type λ[+α]=LazyEitherT[F, E, α]})#λ] with LazyEitherTFoldable[F, E] {
   implicit def F: Traverse[F]
 
   def traverseImpl[G[+_]: Applicative, A, B](fa: LazyEitherT[F, E, A])(f: (A) => G[B]): G[LazyEitherT[F, E, B]] = fa traverse f

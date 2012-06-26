@@ -45,7 +45,7 @@ trait StateT[F[+_], S, +A] { self =>
     case (s1, a) => f(a)(s1)
   })
 
-  def lift[M[_]: Pointed]: StateT[({type λ[+α]=M[F[α]]})#λ, S, A] = new StateT[({type λ[+α]=M[F[α]]})#λ, S, A] {
+  def lift[M[+_]: Pointed]: StateT[({type λ[+α]=M[F[α]]})#λ, S, A] = new StateT[({type λ[+α]=M[F[α]]})#λ, S, A] {
     def apply(initial: S): M[F[(S, A)]] = Pointed[M].point(self(initial))
   }
 
@@ -74,13 +74,13 @@ object StateT extends StateTFunctions with StateTInstances {
 //
 
 trait StateTInstances2 {
-  implicit def stateTFunctor[S, F[+_]](implicit F0: Functor[F]): Functor[({type f[a] = StateT[F, S, a]})#f] = new StateTFunctor[S, F] {
+  implicit def stateTFunctor[S, F[+_]](implicit F0: Functor[F]): Functor[({type λ[+α] = StateT[F, S, α]})#λ] = new StateTFunctor[S, F] {
     implicit def F: Functor[F] = F0
   }
 }
 
 trait StateTInstances1 extends StateTInstances2 {
-  implicit def stateTPointed[S, F[+_]](implicit F0: Pointed[F]): Pointed[({type f[a] = StateT[F, S, a]})#f] = new StateTPointed[S, F] {
+  implicit def stateTPointed[S, F[+_]](implicit F0: Pointed[F]): Pointed[({type λ[+α] = StateT[F, S, α]})#λ] = new StateTPointed[S, F] {
     implicit def F: Pointed[F] = F0
   }
 }

@@ -8,7 +8,7 @@ private[scalaz] trait CompositionFunctor[F[+_], G[+_]] extends Functor[({type λ
   override def map[A, B](fga: F[G[A]])(f: (A) => B): F[G[B]] = F.map(fga)(ga => G.map(ga)(f))
 }
 
-private[scalaz] trait CompositionPointed[F[+_], G[+_]] extends Pointed[({type λ[α] = F[G[α]]})#λ] with CompositionFunctor[F, G] {
+private[scalaz] trait CompositionPointed[F[+_], G[+_]] extends Pointed[({type λ[+α] = F[G[α]]})#λ] with CompositionFunctor[F, G] {
   implicit def F: Pointed[F]
 
   implicit def G: Pointed[G]

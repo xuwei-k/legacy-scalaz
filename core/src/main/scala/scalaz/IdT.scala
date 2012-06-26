@@ -56,7 +56,7 @@ trait IdTInstances extends IdTInstances0 {
     implicit def F: Monad[F] = F0
   }
 
-  implicit def idTTraverse[F[+_]](implicit F0: Traverse[F]): Traverse[({type λ[α] = IdT[F, α]})#λ] = new IdTTraverse[F] {
+  implicit def idTTraverse[F[+_]](implicit F0: Traverse[F]): Traverse[({type λ[+α] = IdT[F, α]})#λ] = new IdTTraverse[F] {
     implicit def F: Traverse[F] = F0
   }
 }
@@ -100,7 +100,7 @@ private[scalaz] trait IdTFoldable[F[+_]] extends Foldable.FromFoldr[({type λ[α
   override def foldRight[A, B](fa: IdT[F, A], z: => B)(f: (A, => B) => B): B = fa.foldRight(z)(f)
 }
 
-private[scalaz] trait IdTTraverse[F[+_]] extends Traverse[({type λ[α] = IdT[F, α]})#λ] with IdTFoldable[F] with IdTFunctor[F]{
+private[scalaz] trait IdTTraverse[F[+_]] extends Traverse[({type λ[+α] = IdT[F, α]})#λ] with IdTFoldable[F] with IdTFunctor[F]{
   implicit def F: Traverse[F]
 
   def traverseImpl[G[+_] : Applicative, A, B](fa: IdT[F, A])(f: (A) => G[B]): G[IdT[F, B]] = fa traverse f

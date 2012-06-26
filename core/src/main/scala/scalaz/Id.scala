@@ -42,9 +42,9 @@ trait IdInstances {
       // `ffa: Id[Id[A]]`, gives, "cyclic aliasing or subtyping involving type Id", but `ffa: A` is identical.
       override def join[A](ffa: A) = ffa
 
-      override def traverse[A, G[_], B](value: G[A])(f: A => Id[B])(implicit G: Traverse[G]): Id[G[B]] = G.map(value)(f)
+      override def traverse[A, G[+_], B](value: G[A])(f: A => Id[B])(implicit G: Traverse[G]): Id[G[B]] = G.map(value)(f)
 
-      override def sequence[A, G[_] : Traverse](as: G[Id[A]]): Id[G[A]] = as
+      override def sequence[A, G[+_] : Traverse](as: G[Id[A]]): Id[G[A]] = as
 
       override def ap[A, B](fa: => Id[A])(f: => Id[A => B]): Id[B] = f(fa)
 

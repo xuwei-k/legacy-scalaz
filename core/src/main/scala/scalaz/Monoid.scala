@@ -42,7 +42,7 @@ trait Monoid[F] extends Semigroup[F] { self =>
    * A monoidal applicative functor, that implements `point` and `ap` with the operations `zero` and `append` respectively.
    * Note that the type parameter `α` in `Applicative[({type λ[α]=F})#λ]` is discarded; it is a phantom type.
    */
-  final def applicative: Applicative[({type λ[α]=F})#λ] = new Applicative[({type λ[α]=F})#λ] with SemigroupApply {
+  final def applicative: Applicative[({type λ[+α]=F})#λ] = new Applicative[({type λ[+α]=F})#λ] with SemigroupApply {
     def point[A](a: => A) = zero
   }
 
@@ -68,36 +68,36 @@ object Monoid {
   ////
   import annotation.tailrec
 
-  trait ApplicativeSemigroup[F[_], M] extends Semigroup[F[M]] {
+  trait ApplicativeSemigroup[F[+_], M] extends Semigroup[F[M]] {
     implicit def F: Applicative[F]
     implicit def M: Semigroup[M]
     def append(x: F[M], y: => F[M]): F[M] = F.lift2[M, M, M]((m1, m2) => M.append(m1, m2))(x, y)
   }
 
-  trait ApplicativeMonoid[F[_], M] extends Monoid[F[M]] with ApplicativeSemigroup[F, M] {
+  trait ApplicativeMonoid[F[+_], M] extends Monoid[F[M]] with ApplicativeSemigroup[F, M] {
     implicit def M: Monoid[M]
     val zero = F.point(M.zero)
   }
 
   /**A semigroup for sequencing Applicative effects. */
-  def liftSemigroup[F[_], M](implicit F0: Applicative[F], M0: Semigroup[M]): Semigroup[F[M]] = new ApplicativeSemigroup[F, M] {
+  def liftSemigroup[F[+_], M](implicit F0: Applicative[F], M0: Semigroup[M]): Semigroup[F[M]] = new ApplicativeSemigroup[F, M] {
     implicit def F: Applicative[F] = F0
     implicit def M: Semigroup[M] = M0
   }
 
   /**A semigroup for sequencing Applicative effects. */
-  def liftMonoid[F[_], M](implicit F0: Applicative[F], M0: Monoid[M]): Monoid[F[M]] = new ApplicativeMonoid[F, M] {
+  def liftMonoid[F[+_], M](implicit F0: Applicative[F], M0: Monoid[M]): Monoid[F[M]] = new ApplicativeMonoid[F, M] {
     implicit def F: Applicative[F] = F0
     implicit def M: Monoid[M] = M0
   }
 
-  def unfold[F[_], A, B](seed: A)(f: A => Option[(B, A)])(implicit F: Pointed[F], FB: Monoid[F[B]]): F[B] =
+  def unfold[F[+_], A, B](seed: A)(f: A => Option[(B, A)])(implicit F: Pointed[F], FB: Monoid[F[B]]): F[B] =
     f(seed) match {
       case None         => FB.zero
       case Some((b, a)) => FB.append(F.point(b), unfold[F, A, B](a)(f))
     }
 
-  def replicate[F[_], A](a: A)(n: Int, f: A => A = (a: A) => a)(implicit P: Pointed[F], FA: Monoid[F[A]]): F[A] = {
+  def replicate[F[+_], A](a: A)(n: Int, f: A => A = (a: A) => a)(implicit P: Pointed[F], FA: Monoid[F[A]]): F[A] = {
     @tailrec
     def replicate0(accum: F[A], n: Int, a: A): F[A] =
       if (n > 0) replicate0(FA.append(accum, P.point(a)), n - 1, f(a)) else accum

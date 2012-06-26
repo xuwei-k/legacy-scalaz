@@ -6,7 +6,7 @@ import std.string.stringInstance
 /**
  * A multi-way tree, also known as a rose tree. Also known as Cofree[Stream, A].
  */
-sealed trait Tree[A] {
+sealed trait Tree[+A] {
 
   import Tree._
 
@@ -24,8 +24,8 @@ sealed trait Tree[A] {
     Foldable[Stream].foldRight(flatten, z)(f)
 
   /** A 2D String representation of this Tree. */
-  def drawTree(implicit sh: Show[A]): String =
-    Foldable[Stream].foldMap(draw)((_: String) + "\n")
+//  def drawTree(implicit sh: Show[A]): String =
+//    Foldable[Stream].foldMap(draw)((_: String) + "\n")
 
   /** A histomorphic transform. Each element in the resulting tree
    * is a function of the corresponding element in this tree
@@ -37,19 +37,19 @@ sealed trait Tree[A] {
   }
 
   /** A 2D String representation of this Tree, separated into lines. */
-  def draw(implicit sh: Show[A]): Stream[String] = {
-    def drawSubTrees(s: Stream[Tree[A]]): Stream[String] = s match {
-      case Stream.Empty => Stream.Empty
-      case Stream(t)    => "|" #:: shift("`- ", "   ", t.draw)
-      case t #:: ts     => "|" #:: shift("+- ", "|  ", t.draw) append drawSubTrees(ts)
-    }
-    def shift(first: String, other: String, s: Stream[String]): Stream[String] =
-      s.zip(first #:: Stream.continually(other)).map {
-        case (a, b) => a + b
-      }
-
-    sh.shows(rootLabel) #:: drawSubTrees(subForest)
-  }
+//  def draw(implicit sh: Show[A]): Stream[String] = {
+//    def drawSubTrees(s: Stream[Tree[A]]): Stream[String] = s match {
+//      case Stream.Empty => Stream.Empty
+//      case Stream(t)    => "|" #:: shift("`- ", "   ", t.draw)
+//      case t #:: ts     => "|" #:: shift("+- ", "|  ", t.draw) append drawSubTrees(ts)
+//    }
+//    def shift(first: String, other: String, s: Stream[String]): Stream[String] =
+//      s.zip(first #:: Stream.continually(other)).map {
+//        case (a, b) => a + b
+//      }
+//
+//    sh.shows(rootLabel) #:: drawSubTrees(subForest)
+//  }
 
   /** Pre-order traversal. */
   def flatten: Stream[A] = {

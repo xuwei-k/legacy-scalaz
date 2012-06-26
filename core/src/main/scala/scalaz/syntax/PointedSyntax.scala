@@ -2,7 +2,7 @@ package scalaz
 package syntax
 
 /** Wraps a value `self` and provides methods related to `Pointed` */
-trait PointedOps[F[_],A] extends Ops[F[A]] {
+trait PointedOps[F[+_],A] extends Ops[F[A]] {
   implicit def F: Pointed[F]
   ////
   ////
@@ -15,7 +15,7 @@ trait ToPointedOps0 {
 }
 
 trait ToPointedOps extends ToPointedOps0 with ToFunctorOps {
-  implicit def ToPointedOps[F[_],A](v: F[A])(implicit F0: Pointed[F]) =
+  implicit def ToPointedOps[F[+_],A](v: F[A])(implicit F0: Pointed[F]) =
     new PointedOps[F,A] { def self = v; implicit def F: Pointed[F] = F0 }
 
   ////
@@ -24,13 +24,13 @@ trait ToPointedOps extends ToPointedOps0 with ToFunctorOps {
   }
 
   trait PointedIdV[A] extends Ops[A] {
-    def point[F[_] : Pointed]: F[A] = Pointed[F].point(self)
-    def pure[F[_] : Pointed]: F[A] = Pointed[F].point(self)
+    def point[F[+_] : Pointed]: F[A] = Pointed[F].point(self)
+    def pure[F[+_] : Pointed]: F[A] = Pointed[F].point(self)
   }
   ////
 }
 
-trait PointedSyntax[F[_]] extends FunctorSyntax[F] {
+trait PointedSyntax[F[+_]] extends FunctorSyntax[F] {
   implicit def ToPointedOps[A](v: F[A])(implicit F0: Pointed[F]): PointedOps[F, A] = new PointedOps[F,A] { def self = v; implicit def F: Pointed[F] = F0 }
 
   ////

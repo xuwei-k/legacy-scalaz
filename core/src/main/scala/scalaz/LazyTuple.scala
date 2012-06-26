@@ -157,7 +157,7 @@ trait LazyTuple3Instances0 extends LazyTuple3Instances1 {
     implicit def _3 = A3
   }
 
-  implicit def lazyTuple3Monad[A1, A2](implicit A1: Monoid[A1], A2: Monoid[A2]): Monad[({type λ[α] = LazyTuple3[A1, A2, α]})#λ] = new LazyTuple3Monad[A1, A2] {
+  implicit def lazyTuple3Monad[A1, A2](implicit A1: Monoid[A1], A2: Monoid[A2]): Monad[({type λ[+α] = LazyTuple3[A1, A2, α]})#λ] = new LazyTuple3Monad[A1, A2] {
     implicit def _1 = A1
     implicit def _2 = A2
   }

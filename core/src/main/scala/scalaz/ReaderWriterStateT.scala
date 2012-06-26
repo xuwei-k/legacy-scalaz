@@ -67,7 +67,7 @@ trait ReaderWriterStateTFunctor[F[+_], R, W, S] extends Functor[({type λ[+α]=R
   override def map[A, B](fa: ReaderWriterStateT[F, R, W, S, A])(f: A => B) = fa map f
 }
 
-trait ReaderWriterStateTPointed[F[+_], R, W, S] extends Pointed[({type λ[α]=ReaderWriterStateT[F, R, W, S, α]})#λ] with ReaderWriterStateTFunctor[F, R, W, S] {
+trait ReaderWriterStateTPointed[F[+_], R, W, S] extends Pointed[({type λ[+α]=ReaderWriterStateT[F, R, W, S, α]})#λ] with ReaderWriterStateTFunctor[F, R, W, S] {
   implicit def F: Pointed[F]
   implicit def W: Monoid[W]
   def point[A](a: => A) = ReaderWriterStateT((r, s) => F.point((W.zero, a, s)))

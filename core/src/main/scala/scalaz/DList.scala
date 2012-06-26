@@ -69,12 +69,12 @@ trait DListInstances {
     val zero = DList[A]()
     def append(a: DList[A], b: => DList[A]) = a ++ b
   }
-  implicit val dlistMonad: Monad[DList] = new MonadPlus[DList] {
-    def point[A](a: => A) = DList(a)
-    def bind[A, B](as: DList[A])(f: A => DList[B]) = as flatMap f
-    def plus[A](a: DList[A], b: => DList[A]) = a ++ b
-    def empty[A] = DList()
-  }
+//  implicit val dlistMonad: Monad[DList] = new MonadPlus[DList] {
+//    def point[A](a: => A) = DList(a)
+//    def bind[A, B](as: DList[A])(f: A => DList[B]) = as flatMap f
+//    def plus[A](a: DList[A], b: => DList[A]) = a ++ b
+//    def empty[A] = DList()
+//  }
   implicit def dlistEqual[A: Equal]: Equal[DList[A]] = {
     import std.list._
     Equal[List[A]].contramap((_: DList[A]).toList)

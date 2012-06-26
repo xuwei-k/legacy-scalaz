@@ -94,17 +94,17 @@ trait BijectionTFunctions {
       case (p, a) => if(p) Left(a) else Right(a)
     })
 
-  def zipB[X[_], A, B](implicit Z: Zip[X], U: Unzip[X]): Bijection[(X[A], X[B]), X[(A, B)]] =
+  def zipB[X[+_], A, B](implicit Z: Zip[X], U: Unzip[X]): Bijection[(X[A], X[B]), X[(A, B)]] =
     bijection[Id, Id, (X[A], X[B]), X[(A, B)]](x => Z.zip(x._1, x._2), U.unzip(_))
 
   def zipListB[A, B]: Bijection[(List[A], List[B]), List[(A, B)]] =
     zipB[List, A, B]
 
-  def zipEndoB[A, B]: Bijection[(Endo[A], Endo[B]), Endo[(A, B)]] =
-    zipB[Endo, A, B]
+//  def zipEndoB[A, B]: Bijection[(Endo[A], Endo[B]), Endo[(A, B)]] =
+//    zipB[Endo, A, B]
 
   def zipReaderB[T, A, B]: Bijection[(T => A, T => B), T => (A, B)] =
-    zipB[({type l[a] = (T => a)})#l, A, B]
+    zipB[({type λ[+α] = (T => α)})#λ, A, B]
 
   def tuple3B[A, B, C]: Bijection[(A, B, C), (A, (B, C))] =
     bijection({ case (a, b, c) => (a, (b, c)) }, { case (a, (b, c)) => (a, b, c) })

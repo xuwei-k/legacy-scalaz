@@ -2,7 +2,7 @@ package scalaz
 package syntax
 
 /** Wraps a value `self` and provides methods related to `Traverse` */
-trait TraverseOps[F[_], A] extends Ops[F[A]] {
+trait TraverseOps[F[+_], A] extends Ops[F[A]] {
   implicit def F: Traverse[F]
   ////
 
@@ -11,7 +11,7 @@ trait TraverseOps[F[_], A] extends Ops[F[A]] {
   final def tmap[B](f: A => B) =
     F.map(self)(f)
 
-  final def traverse[G[_], B](f: A => G[B])(implicit G: Applicative[G]): G[F[B]] =
+  final def traverse[G[+_], B](f: A => G[B])(implicit G: Applicative[G]): G[F[B]] =
     G.traverse(self)(f)
 
   /** A version of `traverse` that infers the type constructor `G` */
@@ -20,7 +20,7 @@ trait TraverseOps[F[_], A] extends Ops[F[A]] {
   }
 
   /** Traverse with the identity function */
-  final def sequence[G[_], B](implicit ev: A === G[B], G: Applicative[G]): G[F[B]] = {
+  final def sequence[G[+_], B](implicit ev: A === G[B], G: Applicative[G]): G[F[B]] = {
     val fgb: F[G[B]] = ev.subst[F](self)
     F.sequence(fgb)
   }
@@ -77,7 +77,7 @@ trait ToTraverseOps extends ToTraverseOps0 with ToFunctorOps with ToFoldableOps 
   ////
 }
 
-trait TraverseSyntax[F[_]] extends FunctorSyntax[F] with FoldableSyntax[F] {
+trait TraverseSyntax[F[+_]] extends FunctorSyntax[F] with FoldableSyntax[F] {
   implicit def ToTraverseOps[A](v: F[A])(implicit F0: Traverse[F]): TraverseOps[F, A] = new TraverseOps[F,A] { def self = v; implicit def F: Traverse[F] = F0 }
 
   ////

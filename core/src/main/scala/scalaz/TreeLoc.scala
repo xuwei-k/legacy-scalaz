@@ -103,34 +103,34 @@ sealed trait TreeLoc[+A] {
   def hasChildren: Boolean = !isLeaf
 
   /** Replace the current node with the given one. */
-  def setTree(t: Tree[A]): TreeLoc[A] = loc(t, lefts, rights, parents)
+  def setTree[AA >: A](t: Tree[AA]): TreeLoc[AA] = loc(t, lefts, rights, parents)
 
   /** Modify the current node with the given function. */
-  def modifyTree(f: Tree[A] => Tree[A]): TreeLoc[A] = setTree(f(tree))
+  def modifyTree[AA >: A](f: Tree[A] => Tree[AA]): TreeLoc[AA] = setTree(f(tree))
 
   /** Modify the label at the current node with the given function. */
-  def modifyLabel(f: A => A): TreeLoc[A] = setLabel(f(getLabel))
+  def modifyLabel[AA >: A](f: A => AA): TreeLoc[AA] = setLabel(f(getLabel))
 
   /** Get the label of the current node. */
   def getLabel: A = tree.rootLabel
 
   /** Set the label of the current node. */
-  def setLabel(a: A): TreeLoc[A] = modifyTree((t: Tree[A]) => node(a, t.subForest))
+  def setLabel[AA >: A](a: AA): TreeLoc[AA] = modifyTree((t: Tree[A]) => node(a, t.subForest))
 
   /** Insert the given node to the left of the current node and give it focus. */
-  def insertLeft(t: Tree[A]): TreeLoc[A] = loc(t, lefts, Stream.cons(tree, rights), parents)
+  def insertLeft[AA >: A](t: Tree[AA]): TreeLoc[AA] = loc(t, lefts, Stream.cons(tree, rights), parents)
 
   /** Insert the given node to the right of the current node and give it focus. */
-  def insertRight(t: Tree[A]): TreeLoc[A] = loc(t, Stream.cons(tree, lefts), rights, parents)
+  def insertRight[AA >: A](t: Tree[AA]): TreeLoc[AA] = loc(t, Stream.cons(tree, lefts), rights, parents)
 
   /** Insert the given node as the first child of the current node and give it focus. */
-  def insertDownFirst(t: Tree[A]): TreeLoc[A] = loc(t, Stream.Empty, tree.subForest, downParents)
+  def insertDownFirst[AA >: A](t: Tree[AA]): TreeLoc[AA] = loc(t, Stream.Empty, tree.subForest, downParents)
 
   /** Insert the given node as the last child of the current node and give it focus. */
-  def insertDownLast(t: Tree[A]): TreeLoc[A] = loc(t, tree.subForest.reverse, Stream.Empty, downParents)
+  def insertDownLast[AA >: A](t: Tree[AA]): TreeLoc[AA] = loc(t, tree.subForest.reverse, Stream.Empty, downParents)
 
   /** Insert the given node as the nth child of the current node and give it focus. */
-  def insertDownAt(n: Int, t: Tree[A]): Option[TreeLoc[A]] =
+  def insertDownAt[AA >: A](n: Int, t: Tree[AA]): Option[TreeLoc[AA]] =
     for (lr <- splitChildren(Stream.Empty, tree.subForest, n)) yield loc(t, lr._1, lr._2, downParents)
 
   /** Delete the current node and all its children. */
@@ -211,13 +211,13 @@ trait TreeLocInstances {
 }
 
 trait TreeLocFunctions {
-  type TreeForest[A] =
+  type TreeForest[+A] =
   Stream[Tree[A]]
 
-  type Parent[A] =
+  type Parent[+A] =
   (TreeForest[A], A, TreeForest[A])
 
-  type Parents[A] =
+  type Parents[+A] =
   Stream[Parent[A]]
 
   def loc[A](t: Tree[A], l: TreeForest[A], r: TreeForest[A], p: Parents[A]): TreeLoc[A] =

@@ -146,16 +146,16 @@ trait ListFunctions {
     case h :: t => f(NonEmptyList.nel(h, t))
   }
 
-  final def takeWhileM[A, M[_] : Monad](as: List[A])(p: A => M[Boolean]): M[List[A]] = as match {
+  final def takeWhileM[A, M[+_] : Monad](as: List[A])(p: A => M[Boolean]): M[List[A]] = as match {
     case Nil    => Monad[M].point(Nil)
     case h :: t => Monad[M].bind(p(h))(b =>
       if (b) Monad[M].map(takeWhileM(t)(p))((tt: List[A]) => h :: tt) else Monad[M].point(Nil))
   }
 
-  final def takeUntilM[A, M[_] : Monad](as: List[A])(p: A => M[Boolean]): M[List[A]] =
+  final def takeUntilM[A, M[+_] : Monad](as: List[A])(p: A => M[Boolean]): M[List[A]] =
     takeWhileM(as)((a: A) => Monad[M].map(p(a))((b) => !b))
 
-  final def filterM[A, M[_] : Monad](as: List[A])(p: A => M[Boolean]): M[List[A]] = as match {
+  final def filterM[A, M[+_] : Monad](as: List[A])(p: A => M[Boolean]): M[List[A]] = as match {
     case Nil    => Monad[M].point(Nil)
     case h :: t => {
       def g = filterM(t)(p)
@@ -163,7 +163,7 @@ trait ListFunctions {
     }
   }
 
-  final def findM[A, M[_] : Monad](as: List[A])(p: A => M[Boolean]): M[Option[A]] = as match {
+  final def findM[A, M[+_] : Monad](as: List[A])(p: A => M[Boolean]): M[Option[A]] = as match {
     case Nil    => Monad[M].point(None: Option[A])
     case h :: t => Monad[M].bind(p(h))(b =>
       if (b) Monad[M].point(Some(h): Option[A]) else findM(t)(p))
@@ -175,7 +175,7 @@ trait ListFunctions {
     filterM(as)(_ => scala.List(true, false))
   }
 
-  final def partitionM[A, M[_] : Monad](as: List[A])(p: A => M[Boolean]): M[(List[A], List[A])] = as match {
+  final def partitionM[A, M[+_] : Monad](as: List[A])(p: A => M[Boolean]): M[(List[A], List[A])] = as match {
     case Nil    => Monad[M].point(Nil: List[A], Nil: List[A])
     case h :: t =>
       Monad[M].bind(p(h))(b =>
@@ -185,7 +185,7 @@ trait ListFunctions {
       )
   }
 
-  final def spanM[A, M[_] : Monad](as: List[A])(p: A => M[Boolean]): M[(List[A], List[A])] = as match {
+  final def spanM[A, M[+_] : Monad](as: List[A])(p: A => M[Boolean]): M[(List[A], List[A])] = as match {
     case Nil    => Monad[M].point(Nil, Nil)
     case h :: t =>
       Monad[M].bind(p(h))(b =>
@@ -194,10 +194,10 @@ trait ListFunctions {
 
   }
 
-  final def breakM[A, M[_] : Monad](as: List[A])(p: A => M[Boolean]): M[(List[A], List[A])] =
+  final def breakM[A, M[+_] : Monad](as: List[A])(p: A => M[Boolean]): M[(List[A], List[A])] =
     spanM(as)(a => Monad[M].map(p(a))((b: Boolean) => !b))
 
-  final def groupByM[A, M[_] : Monad](as: List[A])(p: (A, A) => M[Boolean]): M[List[List[A]]] = as match {
+  final def groupByM[A, M[+_] : Monad](as: List[A])(p: (A, A) => M[Boolean]): M[List[List[A]]] = as match {
     case Nil    => Monad[M].point(Nil)
     case h :: t => {
       Monad[M].bind(spanM(t)(p(h, _))) {

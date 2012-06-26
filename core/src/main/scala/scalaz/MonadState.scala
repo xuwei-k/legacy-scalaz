@@ -1,6 +1,6 @@
 package scalaz
 
-trait MonadState[F[_,_],S] extends Monad[({type f[x]=F[S,x]})#f] {
+trait MonadState[F[_,_],S] extends Monad[({type λ[+α]=F[S,α]})#λ] {
   def init: F[S,S]
   def put(s: S): F[S,Unit]
   def modify(f: S => S): F[S, Unit] = bind(init)(s => put(f(s)))

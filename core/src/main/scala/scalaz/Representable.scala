@@ -1,7 +1,7 @@
 package scalaz
 
 /** Representable functors */
-abstract class Representable[F[_], X](implicit val F: Functor[F]) {
+abstract class Representable[F[+_], X](implicit val F: Functor[F]) {
   def rep[A](f: X => A): F[A]
   def unrep[A](f: F[A]): X => A
 
@@ -18,14 +18,14 @@ abstract class Representable[F[_], X](implicit val F: Functor[F]) {
 trait RepresentableInstances {
   import scalaz.std.function._
 
-  implicit def readerRepresentable[E]: Representable[({type λ[α] = E => α})#λ, E] =
-    new Representable[({type λ[α] = E => α})#λ, E] {
+  implicit def readerRepresentable[E]: Representable[({type λ[+α] = E => α})#λ, E] =
+    new Representable[({type λ[+α] = E => α})#λ, E] {
       def rep[A](f: E => A) = f
       def unrep[A](f: E => A) = f
     }
 
-  implicit def curryRepresentable[E]: Representable[({type λ[α] = E => α})#λ, (E, Unit)] =
-    new Representable[({type λ[α] = E => α})#λ, (E, Unit)] {
+  implicit def curryRepresentable[E]: Representable[({type λ[+α] = E => α})#λ, (E, Unit)] =
+    new Representable[({type λ[+α] = E => α})#λ, (E, Unit)] {
       def rep[A](f: ((E, Unit)) => A): E => A = e => f(e -> ())
       def unrep[A](f: E => A): ((E, Unit)) => A = e => f(e._1)
     }

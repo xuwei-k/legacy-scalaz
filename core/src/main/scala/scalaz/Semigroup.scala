@@ -26,12 +26,12 @@ trait Semigroup[F]  { self =>
 
   final def compose: Compose[({type λ[α, β]=F})#λ] = new SemigroupCompose {}
 
-  private[scalaz] trait SemigroupApply extends Apply[({type λ[α]=F})#λ] {
+  private[scalaz] trait SemigroupApply extends Apply[({type λ[+α]=F})#λ] {
     override def map[A, B](fa: F)(f: (A) => B) = fa
     def ap[A, B](fa: => F)(f: => F) = append(f, fa)
   }
 
-  final def apply: Apply[({type λ[α]=F})#λ] = new SemigroupApply {}
+  final def apply: Apply[({type λ[+α]=F})#λ] = new SemigroupApply {}
 
   /**
    * A semigroup in type F must satisfy two laws:
@@ -70,10 +70,10 @@ object Semigroup {
     def append(f1: A, f2: => A): A = o.max(f1, f2)
   }
 
-  def repeat[F[_], A](a: A)(implicit F: Pointed[F], m: Semigroup[F[A]]): F[A] =
+  def repeat[F[+_], A](a: A)(implicit F: Pointed[F], m: Semigroup[F[A]]): F[A] =
     m.append(F.point(a), repeat[F, A](a))
 
-  def iterate[F[_], A](a: A)(f: A => A)(implicit F: Pointed[F], m: Semigroup[F[A]]): F[A] =
+  def iterate[F[+_], A](a: A)(f: A => A)(implicit F: Pointed[F], m: Semigroup[F[A]]): F[A] =
     m.append(F.point(a), iterate[F, A](f(a))(f))
 
   ////

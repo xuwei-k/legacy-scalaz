@@ -90,7 +90,7 @@ sealed trait Validation[+E, +A] {
   }
 
   /** Wrap the success value in `M`. */
-  def pointSuccess[M[_] : Pointed, AA >: A]: Validation[E, M[AA]] = this match {
+  def pointSuccess[M[+_] : Pointed, AA >: A]: Validation[E, M[AA]] = this match {
     case Success(a) => Success(Pointed[M].point(a: AA))
     case Failure(e) => Failure(e)
   }
@@ -184,7 +184,7 @@ sealed trait FailProjection[+E, +A] {
   }
 
   /** Wrap the failure value in `M` */
-  def point[M[_] : Pointed, EE >: E]: Validation[M[EE], A] = validation match {
+  def point[M[+_] : Pointed, EE >: E]: Validation[M[EE], A] = validation match {
     case Success(a) => Success(a)
     case Failure(e) => Failure(Pointed[M].point(e: EE))
   }

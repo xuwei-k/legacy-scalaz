@@ -5,7 +5,7 @@ package scalaz
  *
  */
 ////
-trait Unzip[F[_]]  { self =>
+trait Unzip[F[+_]]  { self =>
   ////
   def unzip[A, B](a: F[(A, B)]): (F[A], F[B])
 
@@ -15,7 +15,7 @@ trait Unzip[F[_]]  { self =>
   def seconds[A, B](a: F[(A, B)]): F[B] = unzip(a)._2
 
   /**The composition of Unzips `F` and `G`, `[x]F[G[x]]`, is a Unzip */
-  def compose[G[_]](implicit T0: Functor[F], G0: Unzip[G]): Unzip[({type λ[α] = F[G[α]]})#λ] = new CompositionUnzip[F, G] {
+  def compose[G[+_]](implicit T0: Functor[F], G0: Unzip[G]): Unzip[({type λ[+α] = F[G[α]]})#λ] = new CompositionUnzip[F, G] {
     implicit def F = self
 
     implicit def T = T0
@@ -24,7 +24,7 @@ trait Unzip[F[_]]  { self =>
   }
 
   /**The product of Unzips `F` and `G`, `[x](F[x], G[x]])`, is a Unzip */
-  def product[G[_]](implicit G0: Unzip[G]): Unzip[({type λ[α] = (F[α], G[α])})#λ] = new ProductUnzip[F, G] {
+  def product[G[+_]](implicit G0: Unzip[G]): Unzip[({type λ[+α] = (F[α], G[α])})#λ] = new ProductUnzip[F, G] {
     implicit def F = self
 
     implicit def G = G0
@@ -65,7 +65,7 @@ trait Unzip[F[_]]  { self =>
 }
 
 object Unzip {
-  @inline def apply[F[_]](implicit F: Unzip[F]): Unzip[F] = F
+  @inline def apply[F[+_]](implicit F: Unzip[F]): Unzip[F] = F
 
   ////
   ////

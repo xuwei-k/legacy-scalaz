@@ -2,7 +2,7 @@ package scalaz
 
 import java.lang.ref.WeakReference
 
-sealed trait EphemeralStream[A] {
+sealed trait EphemeralStream[+A] {
 
   import EphemeralStream._
 
@@ -42,8 +42,8 @@ sealed trait EphemeralStream[A] {
     these
   }
 
-  def ++(e: => EphemeralStream[A]): EphemeralStream[A] =
-    foldRight[EphemeralStream[A]](e)((cons[A](_, _)).curried)
+  def ++[AA >: A](e: => EphemeralStream[AA]): EphemeralStream[AA] =
+    foldRight[EphemeralStream[AA]](e)((cons[AA](_, _)).curried)
 
   def flatMap[B](f: A => EphemeralStream[B]): EphemeralStream[B] =
     foldRight[EphemeralStream[B]](emptyEphemeralStream)(h => t => f(h) ++ t)
@@ -56,7 +56,7 @@ sealed trait EphemeralStream[A] {
     foldLeft(0)(addOne _)
   }
 
-  def findM[M[_]: Monad](p: A => M[Boolean]): M[Option[A]] =
+  def findM[M[+_]: Monad](p: A => M[Boolean]): M[Option[A]] =
     if(isEmpty)
       Monad[M].point(None)
     else {
@@ -73,7 +73,7 @@ sealed trait EphemeralStream[A] {
     else
       cons((head(), b.head()), tail() zip b.tail())
 
-  def unzip[X, Y](implicit ev: A =:= (X, Y)): (EphemeralStream[X], EphemeralStream[Y]) =
+  def unzip[X, Y](implicit ev: A <:< (X, Y)): (EphemeralStream[X], EphemeralStream[Y]) =
     foldRight((emptyEphemeralStream[X], emptyEphemeralStream[Y]))(q => r =>
       (cons(q._1, r._1), cons(q._2, r._2)))
 

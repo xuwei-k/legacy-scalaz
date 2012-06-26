@@ -93,7 +93,7 @@ object ValidationT extends ValidationTFunctions with ValidationTInstances {
 
     def |[EE >: E](f: => EE)(implicit M: Functor[F]): F[EE] = getOrElse(f)
 
-    def pointT[G[_], EE >: E, AA >: A](implicit M: Functor[F], G: Pointed[G]): ValidationT[F, G[EE], AA] =
+    def pointT[G[+_], EE >: E, AA >: A](implicit M: Functor[F], G: Pointed[G]): ValidationT[F, G[EE], AA] =
       ValidationT(M.map(validationT.run)(_.fail.point[G, EE]))
 
     def exists(f: E => Boolean)(implicit M: Functor[F]): F[Boolean] =

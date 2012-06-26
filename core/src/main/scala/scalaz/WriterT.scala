@@ -78,7 +78,7 @@ sealed trait WriterT[F[+_], +W, +A] { self =>
       case (a, b) => (f(a), g(b))
     }))
 
-  def bitraverse[G[_], C, D](f: (W) => G[C], g: (A) => G[D])(implicit G: Applicative[G], F: Traverse[F]) =
+  def bitraverse[G[+_], C, D](f: (W) => G[C], g: (A) => G[D])(implicit G: Applicative[G], F: Traverse[F]) =
     G.map(F.traverse[G, (W, A), (C, D)](run) {
       case (a, b) => G.map2(f(a), g(b))((_, _))
     })(writerT(_))
@@ -324,7 +324,7 @@ trait WriterTBifunctor[F[+_]] extends Bifunctor[({type λ[+α, +β]=WriterT[F, �
 trait WriterTBitraverse[F[+_]] extends Bitraverse[({type λ[+α, +β]=WriterT[F, α, β]})#λ] with WriterTBifunctor[F] {
   implicit def F: Traverse[F]
 
-  def bitraverseImpl[G[_]: Applicative, A, B, C, D](fab: WriterT[F, A, B])(f: (A) => G[C], g: (B) => G[D]) =
+  def bitraverseImpl[G[+_]: Applicative, A, B, C, D](fab: WriterT[F, A, B])(f: (A) => G[C], g: (B) => G[D]) =
     fab.bitraverse(f, g)
 }
 

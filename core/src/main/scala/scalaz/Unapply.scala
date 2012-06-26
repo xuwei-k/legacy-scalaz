@@ -262,7 +262,7 @@ object UnapplyProduct {
   //    def foo[T](a: T, x: w.T2)(implicit w: ComputeT2[T])       // more compact, and allows you to provide T1 and infer T2.
   //
   /*implicit */ def unapply[TC[_[_]], MA0, MB0](/*implicit */U1: Unapply[TC, MA0], U2: Unapply[TC, MB0])(implicit iso: U1.M <~> U2.M) = new UnapplyProduct[TC, MA0, MB0] {
-    type M[X] = U1.M[X]
+    type M[+X] = U1.M[X]
     type A = U1.A
     type B = U2.A
     def TC = U1.TC

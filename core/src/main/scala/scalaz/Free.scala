@@ -182,11 +182,11 @@ trait TrampolineInstances {
 object Sink extends SinkInstances
 
 trait SinkInstances {
-  implicit def sinkMonad[S]: Monad[({type f[x] = Sink[S, x]})#f] =
-    new Monad[({type f[x] = Sink[S, x]})#f] {
+  implicit def sinkMonad[S]: Monad[({type λ[+α] = Sink[S, α]})#λ] =
+    new Monad[({type λ[+α] = Sink[S, α]})#λ] {
       def point[A](a: => A) =
-        Suspend[({type f[+x] = (=> S) => x})#f, A](s =>
-          Return[({type f[+x] = (=> S) => x})#f, A](a))
+        Suspend[({type λ[+α] = (=> S) => α})#λ, A](s =>
+          Return[({type λ[+α] = (=> S) => α})#λ, A](a))
       def bind[A, B](s: Sink[S, A])(f: A => Sink[S, B]) = s flatMap f
     }
 }
@@ -194,9 +194,9 @@ trait SinkInstances {
 object Source extends SourceInstances
 
 trait SourceInstances {
-  implicit def sourceMonad[S]: Monad[({type f[x] = Source[S, x]})#f] =
-    new Monad[({type f[x] = Source[S, x]})#f] {
-      override def point[A](a: => A) = Return[({type f[+x] = (S, x)})#f, A](a)
+  implicit def sourceMonad[S]: Monad[({type λ[+α] = Source[S, α]})#λ] =
+    new Monad[({type λ[+α] = Source[S, α]})#λ] {
+      override def point[A](a: => A) = Return[({type λ[+α] = (S, α)})#λ, A](a)
       def bind[A, B](s: Source[S, A])(f: A => Source[S, B]) = s flatMap f
     }
 }
@@ -204,8 +204,8 @@ trait SourceInstances {
 // Trampoline, Sink, and Source are type aliases. We need to add their type class instances
 // to Free to be part of the implicit scope.
 trait FreeInstances extends TrampolineInstances with SinkInstances with SourceInstances {
-  implicit def freeMonad[S[+_]:Functor]: Monad[({type f[x] = Free[S, x]})#f] =
-    new Monad[({type f[x] = Free[S, x]})#f] {
+  implicit def freeMonad[S[+_]:Functor]: Monad[({type λ[+α] = Free[S, α]})#λ] =
+    new Monad[({type λ[+α] = Free[S, α]})#λ] {
       def point[A](a: => A) = Return(a)
       override def map[A, B](fa: Free[S, A])(f: A => B) = fa map f
       def bind[A, B](a: Free[S, A])(f: A => Free[S, B]) = a flatMap f

@@ -23,16 +23,16 @@ trait EndoInstances {
     def append(f1: Endo[A], f2: => Endo[A]) = f1 compose f2
     def zero = Endo.idEndo
   }
-  implicit def endoInstances: Zip[Endo] with Unzip[Endo] = new Zip[Endo] with Unzip[Endo] {
-    def zip[A, B](a: => Endo[A], b: => Endo[B]) =
-      Endo {
-        case (x, y) => (a(x), b(y))
-      }
-
-    // CAUTION: cheats with null
-    def unzip[A, B](a: Endo[(A, B)]) =
-      (Endo(x => a((x, null.asInstanceOf[B]))._1), Endo(x => a((null.asInstanceOf[A], x))._2))
-  }
+//  implicit def endoInstances: Zip[Endo] with Unzip[Endo] = new Zip[Endo] with Unzip[Endo] {
+//    def zip[A, B](a: => Endo[A], b: => Endo[B]) =
+//      Endo {
+//        case (x, y) => (a(x), b(y))
+//      }
+//
+//    // CAUTION: cheats with null
+//    def unzip[A, B](a: Endo[(A, B)]) =
+//      (Endo(x => a((x, null.asInstanceOf[B]))._1), Endo(x => a((null.asInstanceOf[A], x))._2))
+//  }
 }
 
 trait EndoFunctions {

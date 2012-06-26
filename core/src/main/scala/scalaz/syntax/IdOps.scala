@@ -59,7 +59,7 @@ trait IdOps[A] extends Ops[A] {
    * If the provided partial function is defined for `self` run this,
    * otherwise lift `self` into `F` with the provided [[scalaz.Pointed]].
    */
-  def visit[F[_] : Pointed](p: PartialFunction[A, F[A]]): F[A] =
+  def visit[F[+_] : Pointed](p: PartialFunction[A, F[A]]): F[A] =
     if (p isDefinedAt self) p(self)
     else Pointed[F].point(self)
 }
