@@ -97,7 +97,7 @@ package object scalaz {
   type ⊥ = Nothing
   type ⊤ = Any
 
-  type |>=|[G[_], F[_]] = MonadPartialOrder[G, F] 
+  type |>=|[G[+_], F[+_]] = MonadPartialOrder[G, F] 
 
   type ReaderT[F[+_], E, A] = Kleisli[F, E, A]
   type =?>[E, A] = Kleisli[Option, E, A]
@@ -144,7 +144,7 @@ package object scalaz {
 
   type RWS[-R, +W, S, +A] = ReaderWriterState[R, W, S, A]
 
-  type Alternative[F[_]] = ApplicativePlus[F]
+  type Alternative[F[+_]] = ApplicativePlus[F]
 
   /**
    * An [[scalaz.Validation]] with a [[scalaz.NonEmptyList]] as the failure type.
@@ -153,7 +153,7 @@ package object scalaz {
    */
   type ValidationNEL[E, X] = Validation[NonEmptyList[E], X]
   
-  type ValidationTNEL[M[_], E, X] = ValidationT[M, NonEmptyList[E], X]
+  type ValidationTNEL[M[+_], E, X] = ValidationT[M, NonEmptyList[E], X]
 
   type FirstOption[A] = Option[A] @@ Tags.First
   type LastOption[A] = Option[A] @@ Tags.Last

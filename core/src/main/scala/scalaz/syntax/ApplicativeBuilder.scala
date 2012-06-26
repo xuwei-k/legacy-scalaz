@@ -2,7 +2,7 @@ package scalaz
 package syntax
 
 /** @see [[scalaz.syntax.ApplyV]]`#|@|` */
-private[scalaz] trait ApplicativeBuilder[M[_], A, B] {
+private[scalaz] trait ApplicativeBuilder[M[+_], A, B] {
   val a: M[A]
   val b: M[B]
 

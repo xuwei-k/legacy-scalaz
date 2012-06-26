@@ -2,7 +2,7 @@ package scalaz
 package syntax
 
 /** Wraps a value `self` and provides methods related to `ApplicativePlus` */
-trait ApplicativePlusOps[F[_],A] extends Ops[F[A]] {
+trait ApplicativePlusOps[F[+_],A] extends Ops[F[A]] {
   implicit def F: ApplicativePlus[F]
   ////
 
@@ -16,7 +16,7 @@ trait ToApplicativePlusOps0 {
 }
 
 trait ToApplicativePlusOps extends ToApplicativePlusOps0 with ToApplicativeOps with ToPlusEmptyOps {
-  implicit def ToApplicativePlusOps[F[_],A](v: F[A])(implicit F0: ApplicativePlus[F]) =
+  implicit def ToApplicativePlusOps[F[+_],A](v: F[A])(implicit F0: ApplicativePlus[F]) =
     new ApplicativePlusOps[F,A] { def self = v; implicit def F: ApplicativePlus[F] = F0 }
 
   ////
@@ -24,7 +24,7 @@ trait ToApplicativePlusOps extends ToApplicativePlusOps0 with ToApplicativeOps w
   ////
 }
 
-trait ApplicativePlusSyntax[F[_]] extends ApplicativeSyntax[F] with PlusEmptySyntax[F] {
+trait ApplicativePlusSyntax[F[+_]] extends ApplicativeSyntax[F] with PlusEmptySyntax[F] {
   implicit def ToApplicativePlusOps[A](v: F[A])(implicit F0: ApplicativePlus[F]): ApplicativePlusOps[F, A] = new ApplicativePlusOps[F,A] { def self = v; implicit def F: ApplicativePlus[F] = F0 }
 
   ////

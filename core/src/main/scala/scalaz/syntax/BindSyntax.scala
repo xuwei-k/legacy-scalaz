@@ -2,7 +2,7 @@ package scalaz
 package syntax
 
 /** Wraps a value `self` and provides methods related to `Bind` */
-trait BindOps[F[_],A] extends Ops[F[A]] {
+trait BindOps[F[+_],A] extends Ops[F[A]] {
   implicit def F: Bind[F]
   ////
   import Liskov.<~<
@@ -30,7 +30,7 @@ trait ToBindOps0 {
 }
 
 trait ToBindOps extends ToBindOps0 with ToApplyOps {
-  implicit def ToBindOps[F[_],A](v: F[A])(implicit F0: Bind[F]) =
+  implicit def ToBindOps[F[+_],A](v: F[A])(implicit F0: Bind[F]) =
     new BindOps[F,A] { def self = v; implicit def F: Bind[F] = F0 }
 
   ////
@@ -38,7 +38,7 @@ trait ToBindOps extends ToBindOps0 with ToApplyOps {
   ////
 }
 
-trait BindSyntax[F[_]] extends ApplySyntax[F] {
+trait BindSyntax[F[+_]] extends ApplySyntax[F] {
   implicit def ToBindOps[A](v: F[A])(implicit F0: Bind[F]): BindOps[F, A] = new BindOps[F,A] { def self = v; implicit def F: Bind[F] = F0 }
 
   ////

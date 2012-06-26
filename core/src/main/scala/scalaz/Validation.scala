@@ -231,7 +231,7 @@ trait FailProjectionInstances0 {
   }
 
   /**Derive the type class instance for `FailProjection` from `Validation`. */
-  implicit def failProjectionPointed[E] = new IsomorphismPointed[({type λ[α] = FailProjection[E, α]})#λ, ({type λ[α] = Validation[E, α]})#λ] {
+  implicit def failProjectionPointed[E] = new IsomorphismPointed[({type λ[+α] = FailProjection[E, α]})#λ, ({type λ[+α] = Validation[E, α]})#λ] {
     def iso = FailProjectionEIso2[E]
     implicit def G = Validation.validationPointed[E]
   }
@@ -242,8 +242,8 @@ trait FailProjectionInstances extends FailProjectionInstances0 {
 
   /**Derive the type class instance for `FailProjection` from `Validation`. */
   implicit def failProjectionApplicative[E](implicit E: Semigroup[E]) = {
-    type F[a] = FailProjection[E, a]
-    type G[a] = Validation[E, a]
+    type F[+a] = FailProjection[E, a]
+    type G[+a] = Validation[E, a]
 
     new IsomorphismTraverse[F, G] with IsomorphismApplicative[F, G] {
       def iso = FailProjectionEIso2[E]
@@ -253,8 +253,8 @@ trait FailProjectionInstances extends FailProjectionInstances0 {
 
   /** Intentionally non-implicit */
   def failProjectionMonad[E] = {
-    type F[a] = FailProjection[E, a]
-    type G[a] = Validation[E, a]
+    type F[+a] = FailProjection[E, a]
+    type G[+a] = Validation[E, a]
 
     new IsomorphismPointed[F, G] with IsomorphismTraverse[F, G] with IsomorphismMonad[F, G] {
       def iso = FailProjectionEIso2[E]
@@ -278,8 +278,8 @@ trait FailProjectionInstances extends FailProjectionInstances0 {
   }
 
   implicit def failProjectionApplicativeTraversePlus[E: Semigroup] =
-    new IsomorphismApplicative[({type λ[α] = FailProjection[E, α]})#λ, ({type λ[α] = Validation[E, α]})#λ] with
-      IsomorphismTraverse[({type λ[α] = FailProjection[E, α]})#λ, ({type λ[α] = Validation[E, α]})#λ] with
+    new IsomorphismApplicative[({type λ[+α] = FailProjection[E, α]})#λ, ({type λ[+α] = Validation[E, α]})#λ] with
+      IsomorphismTraverse[({type λ[+α] = FailProjection[E, α]})#λ, ({type λ[+α] = Validation[E, α]})#λ] with
       IsomorphismPlus[({type λ[α] = FailProjection[E, α]})#λ, ({type λ[α] = Validation[E, α]})#λ] {
       def iso = FailProjectionEIso2
       implicit def G = Validation.validationApplicative
@@ -302,13 +302,13 @@ trait FailProjectionFunctions {
   }
 
   /** FailProjection is isomorphic to Validation, when the type parameter `E` is partially applied. */
-  implicit def FailProjectionEIso2[E] = new IsoFunctorTemplate[({type λ[α]=FailProjection[E, α]})#λ, ({type λ[α]=Validation[E, α]})#λ] {
+  implicit def FailProjectionEIso2[E] = new IsoFunctorTemplate[({type λ[+α]=FailProjection[E, α]})#λ, ({type λ[+α]=Validation[E, α]})#λ] {
     def to[A](fa: FailProjection[E, A]) = fa.validation
     def from[A](ga: Validation[E, A]) = ga.fail
   }
 
   /** FailProjection is isomorphic to Validation, when the type parameter `A` is partially applied. */
-  implicit def FailProjectionAIso2[A] = new IsoFunctorTemplate[({type λ[α]=FailProjection[α, A]})#λ, ({type λ[α]=Validation[α, A]})#λ] {
+  implicit def FailProjectionAIso2[A] = new IsoFunctorTemplate[({type λ[+α]=FailProjection[α, A]})#λ, ({type λ[+α]=Validation[α, A]})#λ] {
     def to[E](fa: FailProjection[E, A]) = fa.validation
     def from[E](ga: Validation[E, A]) = ga.fail
   }
@@ -331,7 +331,7 @@ trait ValidationInstances0 {
     }
   }
 
-  implicit def validationPointed[E]: Pointed[({type λ[α] = Validation[E, α]})#λ] = new Pointed[({type λ[α] = Validation[E, α]})#λ] {
+  implicit def validationPointed[E]: Pointed[({type λ[+α] = Validation[E, α]})#λ] = new Pointed[({type λ[+α] = Validation[E, α]})#λ] {
     def point[A](a: => A): Validation[E, A] = Success(a)
 
     def map[A, B](fa: Validation[E, A])(f: A => B): Validation[E, B] = fa map f
@@ -340,8 +340,8 @@ trait ValidationInstances0 {
 
 trait ValidationInstances extends ValidationInstances0 {
   /**Validation is an Applicative Functor, if the error type forms a Semigroup */
-  implicit def validationApplicative[E](implicit E: Semigroup[E]) = new Traverse[({type λ[α] = Validation[E, α]})#λ]
-    with Applicative[({type λ[α] = Validation[E, α]})#λ] with Plus[({type λ[α] = Validation[E, α]})#λ] {
+  implicit def validationApplicative[E](implicit E: Semigroup[E]) = new Traverse[({type λ[+α] = Validation[E, α]})#λ]
+    with Applicative[({type λ[+α] = Validation[E, α]})#λ] with Plus[({type λ[α] = Validation[E, α]})#λ] {
     def point[A](a: => A): Validation[E, A] = Success(a)
 
     def traverseImpl[G[+_] : Applicative, A, B](fa: Validation[E, A])(f: A => G[B]): G[Validation[E, B]] = fa traverse f
@@ -372,7 +372,7 @@ trait ValidationInstances extends ValidationInstances0 {
    *
    * This is a convenience to avoid converting to and from `Either`.
    */
-  def validationMonad[E] = new Traverse[({type λ[α] = Validation[E, α]})#λ] with Monad[({type λ[α] = Validation[E, α]})#λ] {
+  def validationMonad[E] = new Traverse[({type λ[+α] = Validation[E, α]})#λ] with Monad[({type λ[+α] = Validation[E, α]})#λ] {
     def point[A](a: => A): Validation[E, A] = Success(a)
 
     def traverseImpl[G[+_] : Applicative, A, B](fa: Validation[E, A])(f: A => G[B]): G[Validation[E, B]] = fa traverse f

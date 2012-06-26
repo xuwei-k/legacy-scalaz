@@ -34,7 +34,7 @@ trait ListInstances extends ListInstances0 {
     def zip[A, B](a: => List[A], b: => List[B]) = a zip b
     def unzip[A, B](a: List[(A, B)]) = a.unzip
 
-    def traverseImpl[F[_], A, B](l: List[A])(f: A => F[B])(implicit F: Applicative[F]) = {
+    def traverseImpl[F[+_], A, B](l: List[A])(f: A => F[B])(implicit F: Applicative[F]) = {
       // implementation with `foldRight` leads to SOE in:
       //
       //  def wc(c: Char) = State[Boolean, Int]{(inWord) =>

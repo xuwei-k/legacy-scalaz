@@ -69,18 +69,18 @@ trait TupleInstances0 {
   }
 
   /** Product functor and comonad */
-  implicit def tuple2Instance[A1]: Functor[({type f[x] = (A1, x)})#f] with Comonad[({type f[x] = (A1, x)})#f] = new Tuple2Functor[A1] with Comonad[({type f[x] = (A1, x)})#f] {
+  implicit def tuple2Instance[A1]: Functor[({type λ[+α] = (A1, α)})#λ] with Comonad[({type λ[+α] = (A1, α)})#λ] = new Tuple2Functor[A1] with Comonad[({type λ[+α] = (A1, α)})#λ] {
     def cojoin[A](a: (A1, A)) = (a._1, a)
     def copoint[A](p: (A1, A)) = p._2
     def cobind[A, B](fa: (A1, A))(f: ((A1, A)) => B) = (fa._1, f(fa))
   }
 
-  implicit def tuple3Functor[A1, A2]: Functor[({type f[x] = (A1, A2, x)})#f] = new Tuple3Functor[A1, A2] {}
-  implicit def tuple4Functor[A1, A2, A3]: Functor[({type f[x] = (A1, A2, A3, x)})#f] = new Tuple4Functor[A1, A2, A3] {}
-  implicit def tuple5Functor[A1, A2, A3, A4]: Functor[({type f[x] = (A1, A2, A3, A4, x)})#f] = new Tuple5Functor[A1, A2, A3, A4] {}
-  implicit def tuple6Functor[A1, A2, A3, A4, A5]: Functor[({type f[x] = (A1, A2, A3, A4, A5, x)})#f] = new Tuple6Functor[A1, A2, A3, A4, A5] {}
-  implicit def tuple7Functor[A1, A2, A3, A4, A5, A6]: Functor[({type f[x] = (A1, A2, A3, A4, A5, A6, x)})#f] = new Tuple7Functor[A1, A2, A3, A4, A5, A6] {}
-  implicit def tuple8Functor[A1, A2, A3, A4, A5, A6, A7]: Functor[({type f[x] = (A1, A2, A3, A4, A5, A6, A7, x)})#f] = new Tuple8Functor[A1, A2, A3, A4, A5, A6, A7] {}
+  implicit def tuple3Functor[A1, A2]: Functor[({type λ[+α] = (A1, A2, α)})#λ] = new Tuple3Functor[A1, A2] {}
+  implicit def tuple4Functor[A1, A2, A3]: Functor[({type λ[+α] = (A1, A2, A3, α)})#λ] = new Tuple4Functor[A1, A2, A3] {}
+  implicit def tuple5Functor[A1, A2, A3, A4]: Functor[({type λ[+α] = (A1, A2, A3, A4, α)})#λ] = new Tuple5Functor[A1, A2, A3, A4] {}
+  implicit def tuple6Functor[A1, A2, A3, A4, A5]: Functor[({type λ[+α] = (A1, A2, A3, A4, A5, α)})#λ] = new Tuple6Functor[A1, A2, A3, A4, A5] {}
+  implicit def tuple7Functor[A1, A2, A3, A4, A5, A6]: Functor[({type λ[+α] = (A1, A2, A3, A4, A5, A6, α)})#λ] = new Tuple7Functor[A1, A2, A3, A4, A5, A6] {}
+  implicit def tuple8Functor[A1, A2, A3, A4, A5, A6, A7]: Functor[({type λ[+α] = (A1, A2, A3, A4, A5, A6, A7, α)})#λ] = new Tuple8Functor[A1, A2, A3, A4, A5, A6, A7] {}
 
   implicit def tuple1Equal[A1](implicit A1: Equal[A1]) = new Tuple1Equal[A1] {
     implicit def _1 = A1
@@ -295,32 +295,32 @@ trait TupleInstances1 extends TupleInstances0 {
     implicit def _8 = A8
   }
 
-  implicit def tuple2Monad[A1](implicit A1: Monoid[A1]): Monad[({type f[x] = (A1, x)})#f] = new Tuple2Monad[A1] {
+  implicit def tuple2Monad[A1](implicit A1: Monoid[A1]): Monad[({type λ[+α] = (A1, α)})#λ] = new Tuple2Monad[A1] {
     implicit def _1 = A1
   }
-  implicit def tuple3Monad[A1, A2](implicit A1: Monoid[A1], A2: Monoid[A2]): Monad[({type f[x] = (A1, A2, x)})#f] = new Tuple3Monad[A1, A2] {
+  implicit def tuple3Monad[A1, A2](implicit A1: Monoid[A1], A2: Monoid[A2]): Monad[({type λ[+α] = (A1, A2, α)})#λ] = new Tuple3Monad[A1, A2] {
     implicit def _1 = A1
     implicit def _2 = A2
   }
-  implicit def tuple4Monad[A1, A2, A3](implicit A1: Monoid[A1], A2: Monoid[A2], A3: Monoid[A3]): Monad[({type f[x] = (A1, A2, A3, x)})#f] = new Tuple4Monad[A1, A2, A3] {
+  implicit def tuple4Monad[A1, A2, A3](implicit A1: Monoid[A1], A2: Monoid[A2], A3: Monoid[A3]): Monad[({type λ[+α] = (A1, A2, A3, α)})#λ] = new Tuple4Monad[A1, A2, A3] {
     implicit def _1 = A1
     implicit def _2 = A2
     implicit def _3 = A3
   }
-  implicit def tuple5Monad[A1, A2, A3, A4](implicit A1: Monoid[A1], A2: Monoid[A2], A3: Monoid[A3], A4: Monoid[A4]): Monad[({type f[x] = (A1, A2, A3, A4, x)})#f] = new Tuple5Monad[A1, A2, A3, A4] {
+  implicit def tuple5Monad[A1, A2, A3, A4](implicit A1: Monoid[A1], A2: Monoid[A2], A3: Monoid[A3], A4: Monoid[A4]): Monad[({type λ[+α] = (A1, A2, A3, A4, α)})#λ] = new Tuple5Monad[A1, A2, A3, A4] {
     implicit def _1 = A1
     implicit def _2 = A2
     implicit def _3 = A3
     implicit def _4 = A4
   }
-  implicit def tuple6Monad[A1, A2, A3, A4, A5](implicit A1: Monoid[A1], A2: Monoid[A2], A3: Monoid[A3], A4: Monoid[A4], A5: Monoid[A5]): Monad[({type f[x] = (A1, A2, A3, A4, A5, x)})#f] = new Tuple6Monad[A1, A2, A3, A4, A5] {
+  implicit def tuple6Monad[A1, A2, A3, A4, A5](implicit A1: Monoid[A1], A2: Monoid[A2], A3: Monoid[A3], A4: Monoid[A4], A5: Monoid[A5]): Monad[({type λ[+α] = (A1, A2, A3, A4, A5, α)})#λ] = new Tuple6Monad[A1, A2, A3, A4, A5] {
     implicit def _1 = A1
     implicit def _2 = A2
     implicit def _3 = A3
     implicit def _4 = A4
     implicit def _5 = A5
   }
-  implicit def tuple7Monad[A1, A2, A3, A4, A5, A6](implicit A1: Monoid[A1], A2: Monoid[A2], A3: Monoid[A3], A4: Monoid[A4], A5: Monoid[A5], A6: Monoid[A6]): Monad[({type f[x] = (A1, A2, A3, A4, A5, A6, x)})#f] = new Tuple7Monad[A1, A2, A3, A4, A5, A6] {
+  implicit def tuple7Monad[A1, A2, A3, A4, A5, A6](implicit A1: Monoid[A1], A2: Monoid[A2], A3: Monoid[A3], A4: Monoid[A4], A5: Monoid[A5], A6: Monoid[A6]): Monad[({type λ[+α] = (A1, A2, A3, A4, A5, A6, α)})#λ] = new Tuple7Monad[A1, A2, A3, A4, A5, A6] {
     implicit def _1 = A1
     implicit def _2 = A2
     implicit def _3 = A3
@@ -328,7 +328,7 @@ trait TupleInstances1 extends TupleInstances0 {
     implicit def _5 = A5
     implicit def _6 = A6
   }
-  implicit def tuple8Monad[A1, A2, A3, A4, A5, A6, A7](implicit A1: Monoid[A1], A2: Monoid[A2], A3: Monoid[A3], A4: Monoid[A4], A5: Monoid[A5], A6: Monoid[A6], A7: Monoid[A7]): Monad[({type f[x] = (A1, A2, A3, A4, A5, A6, A7, x)})#f] = new Tuple8Monad[A1, A2, A3, A4, A5, A6, A7] {
+  implicit def tuple8Monad[A1, A2, A3, A4, A5, A6, A7](implicit A1: Monoid[A1], A2: Monoid[A2], A3: Monoid[A3], A4: Monoid[A4], A5: Monoid[A5], A6: Monoid[A6], A7: Monoid[A7]): Monad[({type λ[+α] = (A1, A2, A3, A4, A5, A6, A7, α)})#λ] = new Tuple8Monad[A1, A2, A3, A4, A5, A6, A7] {
     implicit def _1 = A1
     implicit def _2 = A2
     implicit def _3 = A3
@@ -512,31 +512,31 @@ private[scalaz] trait Tuple1Functor extends Functor[Tuple1] {
   override def map[A, B](fa: Tuple1[A])(f: (A) => B) =
     Tuple1(f(fa._1))
 }
-private[scalaz] trait Tuple2Functor[A1] extends Functor[({type f[x] = (A1, x)})#f] {
+private[scalaz] trait Tuple2Functor[A1] extends Functor[({type λ[+α] = (A1, α)})#λ] {
   override def map[A, B](fa: (A1, A))(f: A => B) =
     (fa._1, f(fa._2))
 }
-private[scalaz] trait Tuple3Functor[A1, A2] extends Functor[({type f[x] = (A1, A2, x)})#f] {
+private[scalaz] trait Tuple3Functor[A1, A2] extends Functor[({type λ[+α] = (A1, A2, α)})#λ] {
   override def map[A, B](fa: (A1, A2, A))(f: A => B) =
     (fa._1, fa._2, f(fa._3))
 }
-private[scalaz] trait Tuple4Functor[A1, A2, A3] extends Functor[({type f[x] = (A1, A2, A3, x)})#f] {
+private[scalaz] trait Tuple4Functor[A1, A2, A3] extends Functor[({type λ[+α] = (A1, A2, A3, α)})#λ] {
   override def map[A, B](fa: (A1, A2, A3, A))(f: A => B) =
     (fa._1, fa._2, fa._3, f(fa._4))
 }
-private[scalaz] trait Tuple5Functor[A1, A2, A3, A4] extends Functor[({type f[x] = (A1, A2, A3, A4, x)})#f] {
+private[scalaz] trait Tuple5Functor[A1, A2, A3, A4] extends Functor[({type λ[+α] = (A1, A2, A3, A4, α)})#λ] {
   override def map[A, B](fa: (A1, A2, A3, A4, A))(f: A => B) =
     (fa._1, fa._2, fa._3, fa._4, f(fa._5))
 }
-private[scalaz] trait Tuple6Functor[A1, A2, A3, A4, A5] extends Functor[({type f[x] = (A1, A2, A3, A4, A5, x)})#f] {
+private[scalaz] trait Tuple6Functor[A1, A2, A3, A4, A5] extends Functor[({type λ[+α] = (A1, A2, A3, A4, A5, α)})#λ] {
   override def map[A, B](fa: (A1, A2, A3, A4, A5, A))(f: A => B) =
     (fa._1, fa._2, fa._3, fa._4, fa._5, f(fa._6))
 }
-private[scalaz] trait Tuple7Functor[A1, A2, A3, A4, A5, A6] extends Functor[({type f[x] = (A1, A2, A3, A4, A5, A6, x)})#f] {
+private[scalaz] trait Tuple7Functor[A1, A2, A3, A4, A5, A6] extends Functor[({type λ[+α] = (A1, A2, A3, A4, A5, A6, α)})#λ] {
   override def map[A, B](fa: (A1, A2, A3, A4, A5, A6, A))(f: A => B) =
     (fa._1, fa._2, fa._3, fa._4, fa._5, fa._6, f(fa._7))
 }
-private[scalaz] trait Tuple8Functor[A1, A2, A3, A4, A5, A6, A7] extends Functor[({type f[x] = (A1, A2, A3, A4, A5, A6, A7, x)})#f] {
+private[scalaz] trait Tuple8Functor[A1, A2, A3, A4, A5, A6, A7] extends Functor[({type λ[+α] = (A1, A2, A3, A4, A5, A6, A7, α)})#λ] {
   override def map[A, B](fa: (A1, A2, A3, A4, A5, A6, A7, A))(f: A => B) =
     (fa._1, fa._2, fa._3, fa._4, fa._5, fa._6, fa._7, f(fa._8))
 }
@@ -934,7 +934,7 @@ private[scalaz] trait Tuple1Monad extends Monad[Tuple1] {
 // TupleN forms a Monad if the element types other than the last are Monoids.
 
 
-private[scalaz] trait Tuple2Monad[A1] extends Monad[({type f[x] = (A1, x)})#f] with Tuple2Functor[A1] {
+private[scalaz] trait Tuple2Monad[A1] extends Monad[({type λ[+α] = (A1, α)})#λ] with Tuple2Functor[A1] {
   implicit def _1 : Monoid[A1]
   def bind[A, B](fa: (A1, A))(f: A => (A1, B)) = {
     val t = f(fa._2)
@@ -943,7 +943,7 @@ private[scalaz] trait Tuple2Monad[A1] extends Monad[({type f[x] = (A1, x)})#f] w
   }
   def point[A](a: => A) = (_1.zero, a)
 }
-private[scalaz] trait Tuple3Monad[A1, A2] extends Monad[({type f[x] = (A1, A2, x)})#f] with Tuple3Functor[A1, A2] {
+private[scalaz] trait Tuple3Monad[A1, A2] extends Monad[({type λ[+α] = (A1, A2, α)})#λ] with Tuple3Functor[A1, A2] {
   implicit def _1 : Monoid[A1]
   implicit def _2 : Monoid[A2]
   def bind[A, B](fa: (A1, A2, A))(f: A => (A1, A2, B)) = {
@@ -954,7 +954,7 @@ private[scalaz] trait Tuple3Monad[A1, A2] extends Monad[({type f[x] = (A1, A2, x
 
   def point[A](a: => A) = (_1.zero, _2.zero, a)
 }
-private[scalaz] trait Tuple4Monad[A1, A2, A3] extends Monad[({type f[x] = (A1, A2, A3, x)})#f] with Tuple4Functor[A1, A2, A3] {
+private[scalaz] trait Tuple4Monad[A1, A2, A3] extends Monad[({type λ[+α] = (A1, A2, A3, α)})#λ] with Tuple4Functor[A1, A2, A3] {
   implicit def _1 : Monoid[A1]
   implicit def _2 : Monoid[A2]
   implicit def _3 : Monoid[A3]
@@ -965,7 +965,7 @@ private[scalaz] trait Tuple4Monad[A1, A2, A3] extends Monad[({type f[x] = (A1, A
   }
   def point[A](a: => A) = (_1.zero, _2.zero, _3.zero, a)
 }
-private[scalaz] trait Tuple5Monad[A1, A2, A3, A4] extends Monad[({type f[x] = (A1, A2, A3, A4, x)})#f] with Tuple5Functor[A1, A2, A3, A4] {
+private[scalaz] trait Tuple5Monad[A1, A2, A3, A4] extends Monad[({type λ[+α] = (A1, A2, A3, A4, α)})#λ] with Tuple5Functor[A1, A2, A3, A4] {
   implicit def _1 : Monoid[A1]
   implicit def _2 : Monoid[A2]
   implicit def _3 : Monoid[A3]
@@ -977,7 +977,7 @@ private[scalaz] trait Tuple5Monad[A1, A2, A3, A4] extends Monad[({type f[x] = (A
   }
   def point[A](a: => A) = (_1.zero, _2.zero, _3.zero, _4.zero, a)
 }
-private[scalaz] trait Tuple6Monad[A1, A2, A3, A4, A5] extends Monad[({type f[x] = (A1, A2, A3, A4, A5, x)})#f] with Tuple6Functor[A1, A2, A3, A4, A5] {
+private[scalaz] trait Tuple6Monad[A1, A2, A3, A4, A5] extends Monad[({type λ[+α] = (A1, A2, A3, A4, A5, α)})#λ] with Tuple6Functor[A1, A2, A3, A4, A5] {
   implicit def _1 : Monoid[A1]
   implicit def _2 : Monoid[A2]
   implicit def _3 : Monoid[A3]
@@ -990,7 +990,7 @@ private[scalaz] trait Tuple6Monad[A1, A2, A3, A4, A5] extends Monad[({type f[x] 
   }
   def point[A](a: => A) = (_1.zero, _2.zero, _3.zero, _4.zero, _5.zero, a)
 }
-private[scalaz] trait Tuple7Monad[A1, A2, A3, A4, A5, A6] extends Monad[({type f[x] = (A1, A2, A3, A4, A5, A6, x)})#f] with Tuple7Functor[A1, A2, A3, A4, A5, A6] {
+private[scalaz] trait Tuple7Monad[A1, A2, A3, A4, A5, A6] extends Monad[({type λ[+α] = (A1, A2, A3, A4, A5, A6, α)})#λ] with Tuple7Functor[A1, A2, A3, A4, A5, A6] {
   implicit def _1 : Monoid[A1]
   implicit def _2 : Monoid[A2]
   implicit def _3 : Monoid[A3]
@@ -1005,7 +1005,7 @@ private[scalaz] trait Tuple7Monad[A1, A2, A3, A4, A5, A6] extends Monad[({type f
 
   def point[A](a: => A) = (_1.zero, _2.zero, _3.zero, _4.zero, _5.zero, _6.zero, a)
 }
-private[scalaz] trait Tuple8Monad[A1, A2, A3, A4, A5, A6, A7] extends Monad[({type f[x] = (A1, A2, A3, A4, A5, A6, A7, x)})#f] with Tuple8Functor[A1, A2, A3, A4, A5, A6, A7] {
+private[scalaz] trait Tuple8Monad[A1, A2, A3, A4, A5, A6, A7] extends Monad[({type λ[+α] = (A1, A2, A3, A4, A5, A6, A7, α)})#λ] with Tuple8Functor[A1, A2, A3, A4, A5, A6, A7] {
   implicit def _1 : Monoid[A1]
   implicit def _2 : Monoid[A2]
   implicit def _3 : Monoid[A3]

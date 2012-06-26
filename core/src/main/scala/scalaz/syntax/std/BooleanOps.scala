@@ -233,15 +233,15 @@ trait BooleanOps extends Ops[Boolean] {
    */
   final def !?[A](a: => A)(implicit z: Monoid[A]): A = b.zeroOrValue(self)(a)
 
-  trait GuardPrevent[M[_]] {
+  trait GuardPrevent[M[+_]] {
     def apply[A](a: => A)(implicit M: Pointed[M], M0: PlusEmpty[M]): M[A]
   }
 
-  final def guard[M[_]] = new GuardPrevent[M] {
+  final def guard[M[+_]] = new GuardPrevent[M] {
     def apply[A](a: => A)(implicit M: Pointed[M], M0: PlusEmpty[M]) = b.pointOrEmpty[M, A](self)(a)
   }
 
-  final def prevent[M[_]] = new GuardPrevent[M] {
+  final def prevent[M[+_]] = new GuardPrevent[M] {
     def apply[A](a: => A)(implicit M: Pointed[M], M0: PlusEmpty[M]) = b.emptyOrPure[M, A](self)(a)
   }
 }

@@ -332,8 +332,8 @@ trait LensTInstances {
   implicit def LensState[F[+_], A, B](lens: LensT[F, A, B])(implicit F: Functor[F]): StateT[F, A, B] =
     lens.st
 
-  implicit def LensTUnzip[F[+_], S](implicit F: Functor[F]): Unzip[({type λ[α] = LensT[F, S, α]})#λ] =
-    new Unzip[({type λ[α] = LensT[F, S, α]})#λ] {
+  implicit def LensTUnzip[F[+_], S](implicit F: Functor[F]): Unzip[({type λ[+α] = LensT[F, S, α]})#λ] =
+    new Unzip[({type λ[+α] = LensT[F, S, α]})#λ] {
       def unzip[A, B](a: LensT[F, S, (A, B)]) =
         (
           LensT(x => F.map(a run x)(c => {

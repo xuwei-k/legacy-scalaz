@@ -511,8 +511,8 @@ trait PLensTInstances extends PLensTInstance0 {
   implicit def PLensState[F[+_], A, B](plens: PLensT[F, A, B])(implicit F: Functor[F]): PStateT[F, A, B] =
     plens.st
 
-  implicit def PLensTUnzip[F[+_], S](implicit F: Functor[F]): Unzip[({type λ[α] = PLensT[F, S, α]})#λ] =
-    new Unzip[({type λ[α] = PLensT[F, S, α]})#λ] {
+  implicit def PLensTUnzip[F[+_], S](implicit F: Functor[F]): Unzip[({type λ[+α] = PLensT[F, S, α]})#λ] =
+    new Unzip[({type λ[+α] = PLensT[F, S, α]})#λ] {
       def unzip[A, B](a: PLensT[F, S, (A, B)]) =
         (
           PLensT(x => F.map(a run x)(_ map (c => {

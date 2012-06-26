@@ -78,7 +78,7 @@ private[scalaz] trait ProductDistributive[F[+_], G[+_]] extends Distributive[({t
     (F.distribute(a)(x => f(x)._1), G.distribute(a)(x => f(x)._2))
 }
 
-private[scalaz] trait ProductZip[F[_], G[_]] extends Zip[({type λ[α] = (F[α], G[α])})#λ] {
+private[scalaz] trait ProductZip[F[+_], G[+_]] extends Zip[({type λ[+α] = (F[α], G[α])})#λ] {
   implicit def F: Zip[F]
 
   implicit def G: Zip[G]
@@ -87,7 +87,7 @@ private[scalaz] trait ProductZip[F[_], G[_]] extends Zip[({type λ[α] = (F[α],
     (F.zip(a._1, b._1), G.zip(a._2, b._2))
 }
 
-private[scalaz] trait ProductUnzip[F[_], G[_]] extends Unzip[({type λ[α] = (F[α], G[α])})#λ] {
+private[scalaz] trait ProductUnzip[F[+_], G[+_]] extends Unzip[({type λ[+α] = (F[α], G[α])})#λ] {
   implicit def F: Unzip[F]
 
   implicit def G: Unzip[G]

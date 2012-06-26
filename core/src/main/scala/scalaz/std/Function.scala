@@ -54,7 +54,7 @@ trait FunctionInstances extends FunctionInstances0 {
     
   }
 
-  implicit def function1Covariant[T]: Monad[({type l[a] = (T => a)})#l] with Zip[({type l[a] = (T => a)})#l] with Unzip[({type l[a] = (T => a)})#l] with Distributive[({type l[a] = (T => a)})#l] = new Monad[({type l[a] = (T => a)})#l] with Zip[({type l[a] = (T => a)})#l] with Unzip[({type l[a] = (T => a)})#l] with Distributive[({type l[a] = (T => a)})#l] {
+  implicit def function1Covariant[T]: Monad[({type λ[+α] = (T => α)})#λ] with Zip[({type λ[+α] = (T => α)})#λ] with Unzip[({type λ[+α] = (T => α)})#λ] with Distributive[({type λ[+α] = (T => α)})#λ] = new Monad[({type λ[+α] = (T => α)})#λ] with Zip[({type λ[+α] = (T => α)})#λ] with Unzip[({type λ[+α] = (T => α)})#λ] with Distributive[({type λ[+α] = (T => α)})#λ] {
     def point[A](a: => A) = _ => a
 
     def bind[A, B](fa: T => A)(f: A => T => B) = (t: T) => f(fa(t))(t)
@@ -78,43 +78,43 @@ trait FunctionInstances extends FunctionInstances0 {
     implicit def R: Group[R] = R0
   }
   
-  implicit def function2Instance[T1, T2] = new Monad[({type l[a] = ((T1, T2) => a)})#l] {
+  implicit def function2Instance[T1, T2] = new Monad[({type λ[+α] = ((T1, T2) => α)})#λ] {
     def point[A](a: => A) = (t1, t2) => a
 
     def bind[A, B](fa: (T1, T2) => A)(f: (A) => (T1, T2) => B) = (t1, t2) => f(fa(t1, t2))(t1, t2)
   }
 
-  implicit def function3Instance[T1, T2, T3] = new Monad[({type l[a] = ((T1, T2, T3) => a)})#l] {
+  implicit def function3Instance[T1, T2, T3] = new Monad[({type λ[+α] = ((T1, T2, T3) => α)})#λ] {
     def point[A](a: => A) = (t1, t2, t3) => a
 
     def bind[A, B](fa: (T1, T2, T3) => A)(f: (A) => (T1, T2, T3) => B) = (t1, t2, t3) => f(fa(t1, t2, t3))(t1, t2, t3)
   }
   
-  implicit def function4Instance[T1, T2, T3, T4] = new Monad[({type l[a] = ((T1, T2, T3, T4) => a)})#l] {
+  implicit def function4Instance[T1, T2, T3, T4] = new Monad[({type λ[+α] = ((T1, T2, T3, T4) => α)})#λ] {
     def point[A](a: => A) = (t1, t2, t3, t4) => a
 
     def bind[A, B](fa: (T1, T2, T3, T4) => A)(f: (A) => (T1, T2, T3, T4) => B) = (t1, t2, t3, t4) => f(fa(t1, t2, t3, t4))(t1, t2, t3, t4)
   }
   
-  implicit def function5Instance[T1, T2, T3, T4, T5] = new Monad[({type l[a] = ((T1, T2, T3, T4, T5) => a)})#l] {
+  implicit def function5Instance[T1, T2, T3, T4, T5] = new Monad[({type λ[+α] = ((T1, T2, T3, T4, T5) => α)})#λ] {
     def point[A](a: => A) = (t1, t2, t3, t4, t5) => a
 
     def bind[A, B](fa: (T1, T2, T3, T4, T5) => A)(f: (A) => (T1, T2, T3, T4, T5) => B) = (t1, t2, t3, t4, t5) => f(fa(t1, t2, t3, t4, t5))(t1, t2, t3, t4, t5)
   }
   
-  implicit def function6Instance[T1, T2, T3, T4, T5, T6] = new Monad[({type l[a] = ((T1, T2, T3, T4, T5, T6) => a)})#l] {
+  implicit def function6Instance[T1, T2, T3, T4, T5, T6] = new Monad[({type λ[+α] = ((T1, T2, T3, T4, T5, T6) => α)})#λ] {
     def point[A](a: => A) = (t1, t2, t3, t4, t5, t6) => a
 
     def bind[A, B](fa: (T1, T2, T3, T4, T5, T6) => A)(f: (A) => (T1, T2, T3, T4, T5, T6) => B) = (t1, t2, t3, t4, t5, t6) => f(fa(t1, t2, t3, t4, t5, t6))(t1, t2, t3, t4, t5, t6)
   }
   
-  implicit def function7Instance[T1, T2, T3, T4, T5, T6, T7] = new Monad[({type l[a] = ((T1, T2, T3, T4, T5, T6, T7) => a)})#l] {
+  implicit def function7Instance[T1, T2, T3, T4, T5, T6, T7] = new Monad[({type λ[+α] = ((T1, T2, T3, T4, T5, T6, T7) => α)})#λ] {
     def point[A](a: => A) = (t1, t2, t3, t4, t5, t6, t7) => a
 
     def bind[A, B](fa: (T1, T2, T3, T4, T5, T6, T7) => A)(f: (A) => (T1, T2, T3, T4, T5, T6, T7) => B) = (t1, t2, t3, t4, t5, t6, t7) => f(fa(t1, t2, t3, t4, t5, t6, t7))(t1, t2, t3, t4, t5, t6, t7)
   }
   
-  implicit def function8Instance[T1, T2, T3, T4, T5, T6, T7, T8] = new Monad[({type l[a] = ((T1, T2, T3, T4, T5, T6, T7, T8) => a)})#l] {
+  implicit def function8Instance[T1, T2, T3, T4, T5, T6, T7, T8] = new Monad[({type λ[+α] = ((T1, T2, T3, T4, T5, T6, T7, T8) => α)})#λ] {
     def point[A](a: => A) = (t1, t2, t3, t4, t5, t6, t7, t8) => a
 
     def bind[A, B](fa: (T1, T2, T3, T4, T5, T6, T7, T8) => A)(f: (A) => (T1, T2, T3, T4, T5, T6, T7, T8) => B) = (t1, t2, t3, t4, t5, t6, t7, t8) => f(fa(t1, t2, t3, t4, t5, t6, t7, t8))(t1, t2, t3, t4, t5, t6, t7, t8)
@@ -138,7 +138,7 @@ trait Function1Monoid[A, R] extends Monoid[A => R] with Function1Semigroup[A, R]
   def zero = a => R.zero
 }
 
-trait Function1Comonad[M, R] extends Comonad[({type λ[α]=(M => α)})#λ] {
+trait Function1Comonad[M, R] extends Comonad[({type λ[+α]=(M => α)})#λ] {
   implicit def M: Monoid[M]
   def cojoin[A](a: (M) => A) = (m1: M) => (m2: M) => a(M.append(m1, m1))
   def copoint[A](p: (M) => A) = p(M.zero)
