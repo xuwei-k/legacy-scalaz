@@ -186,12 +186,6 @@ trait IsomorphismFunctor[F[_], G[_]] extends Functor[F] {
   override def map[A, B](fa: F[A])(f: A => B): F[B] = iso.from(G.map(iso.to(fa))(f))
 }
 
-trait IsomorphismPointed[F[_], G[_]] extends Pointed[F] with IsomorphismFunctor[F, G] {
-  implicit def G: Pointed[G]
-
-  def point[A](a: => A): F[A] = iso.from(G.point(a))
-}
-
 trait IsomorphismContravariant[F[_], G[_]] extends Contravariant[F] {
   implicit def G: Contravariant[G]
 
@@ -214,8 +208,10 @@ trait IsomorphismApply[F[_], G[_]] extends Apply[F] with IsomorphismFunctor[F, G
   override def ap[A, B](fa: => F[A])(f: => F[(A) => B]): F[B] = iso.from(G.ap(iso.to(fa))(iso.to(f)))
 }
 
-trait IsomorphismApplicative[F[_], G[_]] extends Applicative[F] with IsomorphismApply[F, G] with IsomorphismPointed[F, G] {
+trait IsomorphismApplicative[F[_], G[_]] extends Applicative[F] with IsomorphismApply[F, G] {
   implicit def G: Applicative[G]
+
+  def point[A](a: => A): F[A] = iso.from(G.point(a))
 
   override def ap[A, B](fa: => F[A])(f: => F[(A) => B]): F[B] = iso.from(G.ap(iso.to(fa))(iso.to(f)))
 }
