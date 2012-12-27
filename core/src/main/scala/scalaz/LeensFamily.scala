@@ -211,6 +211,71 @@ trait LeensFamilyFunctions {
   def lensFamily[A1, A2, B1, B2](r: A1 => IndexedStore[B1, B2, A2]): LeensFamily[A1, A2, B1, B2] = new LeensFamily[A1, A2, B1, B2] {
     def run(a: A1): IndexedStore[B1, B2, A2] = r(a)
   }
+
+  def lensFamilyg[A1, A2, B1, B2](set: A1 => B2 => A2, get: A1 => B1): LeensFamily[A1, A2, B1, B2] =
+    lensFamily(a => IndexedStore(set(a), get(a)))
+
+  def lensFamilyu[A1, A2, B1, B2](set: (A1, B2) => A2, get: A1 => B1): LeensFamily[A1, A2, B1, B2] =
+    lensFamilyg(set.curried, get)
+
+  /** The identity lens family for a given pair of objects */
+  def lensFamilyId[A1, A2]: LeensFamily[A1, A2, A1, A2] =
+    lensFamily(IndexedStore(identity, _))
+
+  /** A lens family that discards the choice of right or left from disjunction */
+  def codiagLensFamily[A1, A2]: LeensFamily[A1 \/ A1, A2 \/ A2, A1, A2] =
+    lensFamilyId[A1, A2] ||| lensFamilyId[A1, A2]
+
+  /** Polymorphically access the first field of a tuple */
+  def firstLensFamily[A1, A2, B]: LeensFamily[(A1, B), (A2, B), A1, A2] =
+    lensFamily {
+      case (a, b) => IndexedStore(x => (x, b), a)
+    }
+
+  /** Polymorphically access the second field of a tuple */
+  def secondLensFamily[A, B1, B2]: LeensFamily[(A, B1), (A, B2), B1, B2] =
+    lensFamily {
+      case (a, b) => IndexedStore(x => (a, x), b)
+    }
+
+  /** Polymorphically access the first field of a tuple */
+  def lazyFirstLensFamily[A1, A2, B]: LeensFamily[LazyTuple2[A1, B], LazyTuple2[A2, B], A1, A2] =
+    lensFamily(z => IndexedStore(x => LazyTuple2(x, z._2), z._1))
+
+  /** Polymorphically access the second field of a tuple */
+  def lazySecondLensFamily[A, B1, B2]: LeensFamily[LazyTuple2[A, B1], LazyTuple2[A, B2], B1, B2] =
+    lensFamily(z => IndexedStore(x => LazyTuple2(z._1, x), z._2))
+
+  def predicateLensFamily[A1, A2]: LeensFamily[Store[A1, Boolean], Store[A2, Boolean], (A1 \/ A1), (A2 \/ A2)] =
+    lensFamily(q => IndexedStore(_ match {
+      case -\/(l) => Store(_ => true, l)
+      case \/-(r) => Store(_ => false, r)
+    }, {
+      val x = q.pos
+      if(q put x) -\/(x) else \/-(x)
+    }))
+
+  def factorLensFamily[A1, A2, B1, B2, C1, C2]: LeensFamily[((A1, B1) \/ (A1, C1)), ((A2, B2) \/ (A2, C2)), (A1, B1 \/ C1), (A2, B2 \/ C2)] =
+    lensFamily(e => IndexedStore({
+      case (a, -\/(b)) => -\/(a, b)
+      case (a, \/-(c)) => \/-(a, c)
+    }, e match {
+      case -\/((a, b)) => (a, -\/(b))
+      case \/-((a, c)) => (a, \/-(c))
+    }))
+
+  def distributeLensFamily[A1, A2, B1, B2, C1, C2]: LeensFamily[(A1, B1 \/ C1), (A2, B2 \/ C2), ((A1, B1) \/ (A1, C1)), ((A2, B2) \/ (A2, C2))] =
+    lensFamily {
+      case (a, e) => IndexedStore({
+        case -\/((aa, bb)) => (aa, -\/(bb))
+        case \/-((aa, cc)) => (aa, \/-(cc))
+      }, e match {
+        case -\/(b) => -\/(a, b)
+        case \/-(c) => \/-(a, c)
+
+      })
+    }
+
 }
 
 trait LeensFunctions extends LeensFamilyFunctions {
