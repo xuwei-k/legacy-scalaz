@@ -187,54 +187,28 @@ package object scalaz {
   //
   // Lens type aliases
   //
-  type LensT[F[+_], A, B] = LensFamilyT[F, A, A, B, B]
-  type LensFamily[-A1, +A2, +B1, -B2] = LensFamilyT[Id, A1, A2, B1, B2]
-  type Lens[A, B] = LensT[Id, A, B]
-
-  type Leens[A, B] = LeensFamily[A, A, B, B]
+  type Lens[A, B] = LensFamily[A, A, B, B]
 
   // important to define here, rather than at the top-level, to avoid Scala 2.9.2 bug
-  object LensT extends LensTFunctions with LensTInstances {
-    def apply[F[+_], A, B](r: A => F[Store[B, A]]): LensT[F, A, B] =
-      lensT(r)
-  }
-  object LensFamily extends LensTFunctions with LensTInstances {
-    def apply[A1, A2, B1, B2](r: A1 => IndexedStore[B1, B2, A2]): LensFamily[A1, A2, B1, B2] =
-      lensFamily(r)
-  }
-  object Lens extends LensTFunctions with LensTInstances {
+  object Lens extends LensFunctions with LensInstances {
     def apply[A, B](r: A => Store[B, A]): Lens[A, B] =
       lens(r)
   }
 
   type @>[A, B] = Lens[A, B]
-  type @@>[A, B] = Leens[A, B]
 
   //
   // Partial Lens type aliases
   //
-  type PLensT[F[+_], A, B] = PLensFamilyT[F, A, A, B, B]
-  type PLensFamily[-A1, +A2, +B1, -B2] = PLensFamilyT[Id, A1, A2, B1, B2]
-  type PLens[A, B] = PLensT[Id, A, B]
-
-  type PLeens[A, B] = PLeensFamily[A, A, B, B]
+  type PLens[A, B] = PLensFamily[A, A, B, B]
 
   // important to define here, rather than at the top-level, to avoid Scala 2.9.2 bug
-  object PLensT extends PLensTFunctions with PLensTInstances {
-    def apply[F[+_], A, B](r: A => F[Option[Store[B, A]]]): PLensT[F, A, B] =
-      plensT(r)
-  }
-  object PLensFamily extends PLensTFunctions with PLensTInstances {
-    def apply[A1, A2, B1, B2](r: A1 => Option[IndexedStore[B1, B2, A2]]): PLensFamily[A1, A2, B1, B2] =
-      plensFamily(r)
-  }
-  object PLens extends PLensTFunctions with PLensTInstances {
+  object PLens extends PLensFunctions with PLensInstances {
     def apply[A, B](r: A => Option[Store[B, A]]): PLens[A, B] =
       plens(r)
   }
 
   type @?>[A, B] = PLens[A, B]
-  type @@?>[A, B] = PLeens[A, B]
 
   type PIndexedStateT[F[+_], -S1, +S2, +A] = IndexedStateT[F, S1, S2, Option[A]]
   type PStateT[F[+_], S, +A] = PIndexedStateT[F, S, S, A]
