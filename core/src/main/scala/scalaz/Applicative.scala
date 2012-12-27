@@ -17,8 +17,9 @@ package scalaz
  *  @see [[scalaz.Applicative.ApplicativeLaw]]
  */
 ////
-trait Applicative[F[_]] extends Apply[F] with Pointed[F] { self =>
+trait Applicative[F[_]] extends Apply[F] { self =>
   ////
+  def point[A](a: => A): F[A]
 
   // derived functions
   override def map[A, B](fa: F[A])(f: A => B): F[B] =
