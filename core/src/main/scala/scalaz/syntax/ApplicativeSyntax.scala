@@ -17,7 +17,7 @@ trait ToApplicativeOps0 {
 
 }
 
-trait ToApplicativeOps extends ToApplicativeOps0 with ToApplyOps with ToPointedOps {
+trait ToApplicativeOps extends ToApplicativeOps0 with ToApplyOps {
   implicit def ToApplicativeOps[F[_],A](v: F[A])(implicit F0: Applicative[F]) =
     new ApplicativeOps[F,A] { def self = v; implicit def F: Applicative[F] = F0 }
 
