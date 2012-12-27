@@ -75,7 +75,7 @@ sealed trait UnwriterT[F[+_], +U, +A] { self =>
       case (a, b) => G.apply2(f(a), g(b))((_, _))
     })(unwriterT(_))
 
-  def wpoint[G[+_]](implicit F: Functor[F], P: Pointed[G]): UnwriterT[F, G[U], A] =
+  def wpoint[G[+_]](implicit F: Functor[F], P: Applicative[G]): UnwriterT[F, G[U], A] =
     unwriterT(F.map(self.run) {
       case (u, a) => (P.point(u), a)
     })
