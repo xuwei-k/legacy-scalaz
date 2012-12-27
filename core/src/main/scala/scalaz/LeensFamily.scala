@@ -280,12 +280,391 @@ trait LeensFamilyFunctions {
 
 trait LeensFunctions extends LeensFamilyFunctions {
 
+  def lens[A, B](r: A => Store[B, A]): Leens[A, B] = new Leens[A, B] {
+    def run(a: A): Store[B, A] = r(a)
+  }
+
+  def lensg[A, B](set: A => B => A, get: A => B): Leens[A, B] =
+    lens(a => Store(set(a), get(a)))
+
+  def lensu[A, B](set: (A, B) => A, get: A => B): Leens[A, B] =
+    lensg(set.curried, get)
+
+  /** The identity lens for a given object */
+  def lensId[A]: Leens[A, A] =
+    lens(Store(identity, _))
+
+  /** The trivial lens that can retrieve Unit from anything */
+  def trivialLens[A]: Leens[A, Unit] =
+    lens[A, Unit](a => Store(_ => a, ()))
+
+  /** A lens that discards the choice of right or left from disjunction */
+  def codiagLens[A]: Leens[A \/ A, A] =
+    lensId[A] ||| lensId[A]
+
+  /** Access the first field of a tuple */
+  def firstLens[A, B]: (A, B) @@> A =
+    lens {
+      case (a, b) => Store(x => (x, b), a)
+    }
+
+  /** Access the second field of a tuple */
+  def secondLens[A, B]: (A, B) @@> B =
+    lens {
+      case (a, b) => Store(x => (a, x), b)
+    }
+
+  /** Access the first field of a tuple */
+  def lazyFirstLens[A, B]: LazyTuple2[A, B] @@> A =
+    lens(z => Store(x => LazyTuple2(x, z._2), z._1))
+
+  /** Access the second field of a tuple */
+  def lazySecondLens[A, B]: LazyTuple2[A, B] @@> B =
+    lens(z => Store(x => LazyTuple2(z._1, x), z._2))
+
+  def nelHeadLens[A]: NonEmptyList[A] @@> A =
+    lens(l => Store(NonEmptyList.nel(_, l.tail), l.head))
+
+  def nelTailLens[A]: NonEmptyList[A] @@> List[A] =
+    lens(l => Store(NonEmptyList.nel(l.head, _), l.tail))
+
+  /** Access the value at a particular key of a Map **/
+  def mapVLens[K, V](k: K): Map[K, V] @@> Option[V] =
+    lensg(m => ({
+      case None => m - k
+      case Some(v) => m.updated(k, v)
+    }: Option[V] => Map[K, V]), _ get k)
+
+  def applyLens[A, B](k: B => A)(implicit e: Equal[A]): Store[A, B] @@> B =
+    lens(q => {
+      lazy val x = q.pos
+      lazy val y = q put x
+      Store(b =>
+        Store(w => if(e equal (x, w)) b else y, x), y)
+    })
+
+  def predicateLens[A]: Store[A, Boolean] @@> (A \/ A) =
+    lens(q => Store(_ match {
+      case -\/(l) => Store(_ => true, l)
+      case \/-(r) => Store(_ => false, r)
+    }, {
+      val x = q.pos
+      if(q put x) -\/(x) else \/-(x)
+    }))
+
+  def factorLens[A, B, C]: ((A, B) \/ (A, C)) @@> (A, B \/ C) =
+    lens(e => Store({
+      case (a, -\/(b)) => -\/(a, b)
+      case (a, \/-(c)) => \/-(a, c)
+    }, e match {
+      case -\/((a, b)) => (a, -\/(b))
+      case \/-((a, c)) => (a, \/-(c))
+    }))
+
+  def distributeLens[A, B, C]: (A, B \/ C) @@> ((A, B) \/ (A, C)) =
+    lens {
+      case (a, e) => Store({
+        case -\/((aa, bb)) => (aa, -\/(bb))
+        case \/-((aa, cc)) => (aa, \/-(cc))
+      }, e match {
+        case -\/(b) => -\/(a, b)
+        case \/-(c) => \/-(a, c)
+
+      })
+    }
 }
 
 trait LeensInstances0 { this: LeensInstances =>
+  implicit def lensArrId: ArrId[({type λ[α, β] = Leens[α, β]})#λ] = new LeensArrId {
+  }
+
+  import scala.collection.SeqLike
+
+  implicit def seqLikeLensFamily[S1, S2, A, Repr <: SeqLike[A, Repr]](lens: LeensFamily[S1, S2, Repr, Repr]) =
+    SeqLikeLens[S1, S2, A, Repr](lens)
 
 }
 
 trait LeensInstances extends LeensInstances0 {
+  import LeensFamily._
+  import BijectionT._
+  import collection.SeqLike
+  import collection.immutable.Stack
+  import collection.immutable.Queue
+
+  implicit def lensCategory: LeensCategory = new LeensCategory {
+  }
+
+  /** Lenses may be used implicitly as State monadic actions that get the viewed portion of the state */
+  implicit def LensFamilyState[A, B](lens: LeensFamily[A, _, B, _]): State[A, B] =
+    lens.st
+
+  implicit def LensFamilyUnzip[S, R]: Unzip[({type λ[α] = LeensFamily[S, R, α, α]})#λ] =
+    new Unzip[({type λ[α] = LeensFamily[S, R, α, α]})#λ] {
+      def unzip[A, B](a: LeensFamily[S, R, (A, B), (A, B)]) =
+        (
+          lensFamily(x => {
+            val c = a run x
+            val (p, q) = c.pos
+            IndexedStore(a => c.put((a, q)): R, p)
+          })
+        , lensFamily(x => {
+          val c = a run x
+          val (p, q) = c.pos
+          IndexedStore(a => c.put((p, a)): R, q)
+        })
+        )
+    }
+
+  type SetLens[S, K] = SetLensFamily[S, S, K]
+  val SetLens: SetLensFamily.type = SetLensFamily
+  case class SetLensFamily[-S1, +S2, K](lens: LeensFamily[S1, S2, Set[K], Set[K]]) {
+    /** Setting the value of this lens will change whether or not it is present in the set */
+    def contains(key: K) = lensFamilyg[S1, S2, Boolean, Boolean](
+      s => b => lens.mod(m => if (b) m + key else m - key, s): Id[S2]
+    , s => lens.get(s).contains(key)
+    )
+
+    def &=(that: Set[K]): IndexedState[S1, S2, Set[K]] =
+      lens %= (_ & that)
+
+    def &~=(that: Set[K]): IndexedState[S1, S2, Set[K]] =
+      lens %= (_ &~ that)
+
+    def |=(that: Set[K]): IndexedState[S1, S2, Set[K]] =
+      lens %= (_ | that)
+
+    def +=(elem: K): IndexedState[S1, S2, Set[K]] =
+      lens %= (_ + elem)
+
+    def +=(elem1: K, elem2: K, elems: K*): IndexedState[S1, S2, Set[K]] =
+      lens %= (_ + elem1 + elem2 ++ elems)
+
+    def ++=(xs: TraversableOnce[K]): IndexedState[S1, S2, Set[K]] =
+      lens %= (_ ++ xs)
+
+    def -=(elem: K): IndexedState[S1, S2, Set[K]] =
+      lens %= (_ - elem)
+
+    def -=(elem1: K, elem2: K, elems: K*): IndexedState[S1, S2, Set[K]] =
+      lens %= (_ - elem1 - elem2 -- elems)
+
+    def --=(xs: TraversableOnce[K]): IndexedState[S1, S2, Set[K]] =
+      lens %= (_ -- xs)
+  }
+
+  /** A lens that views a Set can provide the appearance of in place mutation */
+  implicit def setLensFamily[S1, S2, K](lens: LeensFamily[S1, S2, Set[K], Set[K]]) =
+    SetLensFamily[S1, S2, K](lens)
+
+  type MapLens[S, K, V] = MapLensFamily[S, S, K, V]
+  val MapLens: MapLensFamily.type = MapLensFamily
+  /** A lens that views an immutable Map type can provide a mutable.Map-like API via State */
+  case class MapLensFamily[-S1, +S2, K, V](lens: LeensFamily[S1, S2, Map[K, V], Map[K, V]]) {
+    /** Allows both viewing and setting the value of a member of the map */
+    def member(k: K): LeensFamily[S1, S2, Option[V], Option[V]] = lensFamilyg[S1, S2, Option[V], Option[V]](
+      s => opt => lens.mod((m: Map[K, V]) => (opt match {
+        case Some(v) => m + (k -> v)
+        case None    => m - k
+      }): Map[K, V], s): Id[S2]
+      , s => lens.get(s).get(k))
+
+    /** This lens has undefined behavior when accessing an element not present in the map! */
+    def at(k: K): LeensFamily[S1, S2, V, V] =
+      lensFamilyg[S1, S2, V, V](s => v => lens.mod(_ + (k -> v), s): Id[S2], lens.get(_) apply k)
+
+    def +=(elem1: (K, V), elem2: (K, V), elems: (K, V)*): IndexedState[S1, S2, Map[K, V]] =
+      lens %= (_ + elem1 + elem2 ++ elems)
+
+    def +=(elem: (K, V)): IndexedState[S1, S2, Map[K, V]] =
+      lens %= (_ + elem)
+
+    def ++=(xs: TraversableOnce[(K, V)]): IndexedState[S1, S2, Map[K, V]] =
+      lens %= (_ ++ xs)
+
+    def update(key: K, value: V): IndexedState[S1, S2, Unit] =
+      lens %== (_.updated(key, value))
+
+    def -=(elem: K): IndexedState[S1, S2, Map[K, V]] =
+      lens %= (_ - elem)
+
+    def -=(elem1: K, elem2: K, elems: K*): IndexedState[S1, S2, Map[K, V]] =
+      lens %= (_ - elem1 - elem2 -- elems)
+
+    def --=(xs: TraversableOnce[K]): IndexedState[S1, S2, Map[K, V]] =
+      lens %= (_ -- xs)
+  }
+
+  implicit def mapLensFamily[S1, S2, K, V](lens: LeensFamily[S1, S2, Map[K, V], Map[K, V]]) =
+    MapLensFamily[S1, S2, K, V](lens)
+
+  type SeqLikeLens[S, A, Repr <: SeqLike[A, Repr]] = SeqLikeLensFamily[S, S, A, Repr]
+  val SeqLikeLens: SeqLikeLensFamily.type = SeqLikeLensFamily
+  /** Provide the appearance of a mutable-like API for sorting sequences through a lens */
+  case class SeqLikeLensFamily[S1, S2, A, Repr <: SeqLike[A, Repr]](lens: LeensFamily[S1, S2, Repr, Repr]) {
+    def sortWith(lt: (A, A) => Boolean): IndexedState[S1, S2, Unit] =
+      lens %== (_ sortWith lt)
+
+    def sortBy[B: math.Ordering](f: A => B): IndexedState[S1, S2, Unit] =
+      lens %== (_ sortBy f)
+
+    def sort[B >: A](implicit ord: math.Ordering[B]): IndexedState[S1, S2, Unit] =
+      lens %== (_.sorted[B])
+  }
+
+  implicit def seqLensFamily[S1, S2, A](lens: LeensFamily[S1, S2, scala.collection.immutable.Seq[A], scala.collection.immutable.Seq[A]]) =
+    seqLikeLensFamily[S1, S2, A, scala.collection.immutable.Seq[A]](lens)
+
+  type StackLens[S, A] = StackLensFamily[S, S, A]
+  val StackLens: StackLensFamily.type = StackLensFamily
+  /** Provide an imperative-seeming API for stacks viewed through a lens */
+  case class StackLensFamily[S1, S2, A](lens: LeensFamily[S1, S2, Stack[A], Stack[A]]) {
+    def push(elem1: A, elem2: A, elems: A*): IndexedState[S1, S2, Unit] =
+      lens %== (_ push elem1 push elem2 pushAll elems)
+
+    def push1(elem: A): IndexedState[S1, S2, Unit] =
+      lens %== (_ push elem)
+
+    def pop: IndexedState[S1, S2, Unit] =
+      lens %== (_.pop)
+
+    def pop2: IndexedState[S1, S2, A] =
+      lens %%= State[Stack[A], A](_.pop2.swap)
+
+    def top: State[S1, A] =
+      lens >- (_.top)
+
+    def length: State[S1, Int] =
+      lens >- (_.length)
+  }
+
+  implicit def stackLensFamily[S1, S2, A](lens: LeensFamily[S1, S2, Stack[A], Stack[A]]) =
+    StackLens[S1, S2, A](lens)
+
+  type QueueLens[S, A] = QueueLensFamily[S, S, A]
+  val QueueLens: QueueLensFamily.type = QueueLensFamily
+  /** Provide an imperative-seeming API for queues viewed through a lens */
+  case class QueueLensFamily[S1, S2, A](lens: LeensFamily[S1, S2, Queue[A], Queue[A]]) {
+    def enqueue(elem: A): IndexedState[S1, S2, Unit] =
+      lens %== (_ enqueue elem)
+
+    def dequeue: IndexedState[S1, S2, A] =
+      lens %%= State[Queue[A], A](_.dequeue.swap)
+
+    def length: State[S1, Int] =
+      lens >- (_.length)
+  }
+
+  implicit def queueLensFamily[S1, S2, A](lens: LeensFamily[S1, S2, Queue[A], Queue[A]]) =
+    QueueLensFamily[S1, S2, A](lens)
+
+  type ArrayLens[S, A] = ArrayLensFamily[S, S, A]
+  val ArrayLens: ArrayLensFamily.type = ArrayLensFamily
+  /** Provide an imperative-seeming API for arrays viewed through a lens */
+  case class ArrayLensFamily[S1, S2, A](lens: LeensFamily[S1, S2, Array[A], Array[A]]) {
+    def at(n: Int): LeensFamily[S1, S2, A, A] =
+      lensFamilyg[S1, S2, A, A](
+        s => v => lens.mod(array => {
+          val copy = array.clone()
+          copy.update(n, v)
+          copy
+        }, s): Id[S2]
+        , s => lens.get(s) apply n
+      )
+
+    def length: State[S1, Int] =
+      lens >- (_.length)
+  }
+
+  implicit def arrayLensFamily[S1, S2, A](lens: LeensFamily[S1, S2, Array[A], Array[A]]) =
+    ArrayLensFamily[S1, S2, A](lens)
+
+  type NumericLens[S, N] = NumericLensFamily[S, S, N]
+  val NumericLens: NumericLensFamily.type = NumericLensFamily
+  /** Allow the illusion of imperative updates to numbers viewed through a lens */
+  case class NumericLensFamily[S1, S2, N](lens: LeensFamily[S1, S2, N, N], num: Numeric[N]) {
+    def +=(that: N): IndexedState[S1, S2, N] =
+      lens %= (num.plus(_, that))
+
+    def -=(that: N): IndexedState[S1, S2, N] =
+      lens %= (num.minus(_, that))
+
+    def *=(that: N): IndexedState[S1, S2, N] =
+      lens %= (num.times(_, that))
+  }
+
+  implicit def numericLensFamily[S1, S2, N: Numeric](lens: LeensFamily[S1, S2, N, N]) =
+    NumericLens[S1, S2, N](lens, implicitly[Numeric[N]])
+
+  type FractionalLens[S, F] = FractionalLensFamily[S, S, F]
+  val FractionalLens: FractionalLensFamily.type = FractionalLensFamily
+  /** Allow the illusion of imperative updates to numbers viewed through a lens */
+  case class FractionalLensFamily[S1, S2, F](lens: LeensFamily[S1, S2, F, F], frac: Fractional[F]) {
+    def /=(that: F): IndexedState[S1, S2, F] =
+      lens %= (frac.div(_, that))
+  }
+
+  implicit def fractionalLensFamily[S1, S2, F: Fractional](lens: LeensFamily[S1, S2, F, F]) =
+    FractionalLensFamily[S1, S2, F](lens, implicitly[Fractional[F]])
+
+  type IntegralLens[S, I] = IntegralLensFamily[S, S, I]
+  val IntegralLens: IntegralLensFamily.type = IntegralLensFamily
+  /** Allow the illusion of imperative updates to numbers viewed through a lens */
+  case class IntegralLensFamily[S1, S2, I](lens: LeensFamily[S1, S2, I, I], ig: Integral[I]) {
+    def %=(that: I): IndexedState[S1, S2, I] =
+      lens %= (ig.quot(_, that))
+  }
+
+  implicit def integralLensFamily[S1, S2, I: Integral](lens: LeensFamily[S1, S2, I, I]) =
+    IntegralLensFamily[S1, S2, I](lens, implicitly[Integral[I]])
+
+  implicit def tuple2LensFamily[S1, S2, A, B](lens: LeensFamily[S1, S2, (A, B), (A, B)]):
+  (LeensFamily[S1, S2, A, A], LeensFamily[S1, S2, B, B]) =
+    LensFamilyUnzip[S1, S2].unzip(lens)
+
+  implicit def tuple3LensFamily[S1, S2, A, B, C](lens: LeensFamily[S1, S2, (A, B, C), (A, B, C)]):
+  (LeensFamily[S1, S2, A, A], LeensFamily[S1, S2, B, B], LeensFamily[S1, S2, C, C]) =
+    LensFamilyUnzip[S1, S2].unzip3(lens.xmapbB(tuple3B))
+
+  implicit def tuple4LensFamily[S1, S2, A, B, C, D](lens: LeensFamily[S1, S2, (A, B, C, D), (A, B, C, D)]):
+  (LeensFamily[S1, S2, A, A], LeensFamily[S1, S2, B, B], LeensFamily[S1, S2, C, C], LeensFamily[S1, S2, D, D]) =
+    LensFamilyUnzip[S1, S2].unzip4(lens.xmapbB(tuple4B))
+
+  implicit def tuple5LensFamily[S1, S2, A, B, C, D, E](lens: LeensFamily[S1, S2, (A, B, C, D, E), (A, B, C, D, E)]):
+  (LeensFamily[S1, S2, A, A], LeensFamily[S1, S2, B, B], LeensFamily[S1, S2, C, C], LeensFamily[S1, S2, D, D], LeensFamily[S1, S2, E, E]) =
+    LensFamilyUnzip[S1, S2].unzip5(lens.xmapbB(tuple5B))
+
+  implicit def tuple6LensFamily[S1, S2, A, B, C, D, E, H](lens: LeensFamily[S1, S2, (A, B, C, D, E, H), (A, B, C, D, E, H)]):
+  (LeensFamily[S1, S2, A, A], LeensFamily[S1, S2, B, B], LeensFamily[S1, S2, C, C], LeensFamily[S1, S2, D, D], LeensFamily[S1, S2, E, E], LeensFamily[S1, S2, H, H]) =
+    LensFamilyUnzip[S1, S2].unzip6(lens.xmapbB(tuple6B))
+
+  implicit def tuple7LensFamily[S1, S2, A, B, C, D, E, H, I](lens: LeensFamily[S1, S2, (A, B, C, D, E, H, I), (A, B, C, D, E, H, I)]):
+  (LeensFamily[S1, S2, A, A], LeensFamily[S1, S2, B, B], LeensFamily[S1, S2, C, C], LeensFamily[S1, S2, D, D], LeensFamily[S1, S2, E, E], LeensFamily[S1, S2, H, H], LeensFamily[S1, S2, I, I]) =
+    LensFamilyUnzip[S1, S2].unzip7(lens.xmapbB(tuple7B))
+}
+
+private[scalaz] trait LeensArrId
+  extends ArrId[({type λ[α, β] = Leens[α, β]})#λ]{
+
+  def id[A] = LeensFamily.lensId
+}
+
+private[scalaz] trait LeensCategory
+  extends Choice[({type λ[α, β] = Leens[α, β]})#λ]
+  with Split[({type λ[α, β] = Leens[α, β]})#λ]
+  with LeensArrId {
+
+  def compose[A, B, C](bc: Leens[B, C], ab: Leens[A, B]): Leens[A, C] = ab >=> bc
+
+  def choice[A, B, C](f: => Leens[A, C], g: => Leens[B, C]): Leens[A \/ B, C] =
+    LeensFamily.lens {
+      case -\/(a) =>
+        f run a map (-\/(_))
+      case \/-(b) =>
+        g run b map (\/-(_))
+    }
+
+  def split[A, B, C, D](f: Leens[A, B], g: Leens[C, D]): Leens[(A,  C), (B, D)] =
+    f *** g
 
 }
