@@ -126,7 +126,7 @@ private[scalaz] trait OptionTFunctor[F[+_]] extends Functor[({type λ[α] = Opti
 private[scalaz] trait OptionTApply[F[+_]] extends Apply[({type λ[α] = OptionT[F, α]})#λ] with OptionTFunctor[F] {
   implicit def F: Apply[F]
 
-  def ap[A, B](fa: => OptionT[F, A])(f: => OptionT[F, A => B]): OptionT[F, B] = fa ap f
+  override def ap[A, B](fa: => OptionT[F, A])(f: => OptionT[F, A => B]): OptionT[F, B] = fa ap f
 }
 
 private[scalaz] trait OptionTApplicative[F[+_]] extends Applicative[({type λ[α] = OptionT[F, α]})#λ] with OptionTApply[F] {

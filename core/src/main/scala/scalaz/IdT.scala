@@ -79,7 +79,7 @@ private[scalaz] trait IdTFunctor[F[_]] extends Functor[({type λ[α] = IdT[F, α
 private[scalaz] trait IdTApply[F[_]] extends Apply[({type λ[α] = IdT[F, α]})#λ] with IdTFunctor[F] {
   implicit def F: Apply[F]
 
-  def ap[A, B](fa: => IdT[F, A])(f: => IdT[F, A => B]): IdT[F, B] = fa ap f
+  override def ap[A, B](fa: => IdT[F, A])(f: => IdT[F, A => B]): IdT[F, B] = fa ap f
 }
 
 private[scalaz] trait IdTApplicative[F[_]] extends Applicative[({type λ[α] = IdT[F, α]})#λ] with IdTApply[F] {

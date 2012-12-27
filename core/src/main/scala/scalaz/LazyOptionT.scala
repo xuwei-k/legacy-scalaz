@@ -126,7 +126,7 @@ private[scalaz] trait LazyOptionTFunctor[F[+_]] extends Functor[({type λ[α] = 
 private[scalaz] trait LazyOptionTApply[F[+_]] extends Apply[({type λ[α] = LazyOptionT[F, α]})#λ] with LazyOptionTFunctor[F] {
   implicit def F: Apply[F]
 
-  def ap[A, B](fa: => LazyOptionT[F, A])(f: => LazyOptionT[F, A => B]): LazyOptionT[F, B] =
+  override def ap[A, B](fa: => LazyOptionT[F, A])(f: => LazyOptionT[F, A => B]): LazyOptionT[F, B] =
     LazyOptionT(F.apply2(f.run, fa.run)({ case (ff, aa) => LazyOption.lazyOptionInstance.ap(aa)(ff) }))
 }
 
