@@ -14,6 +14,15 @@ trait CallableInstances {
       def call() = f(fa.call)
     }
   }
+
+  implicit def callableMonad: Monad[Callable] = new Monad[Callable] {
+    def bind[A, B](fa: Callable[A])(f: (A) => Callable[B]) = new Callable[B] {
+      def call() = f(fa.call).call
+    }
+    def point[A](a: => A) = new Callable[A] {
+      def call() = a
+    }
+  }
 }
 
 object callable extends CallableInstances
