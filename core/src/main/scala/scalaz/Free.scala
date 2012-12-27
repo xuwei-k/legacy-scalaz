@@ -217,10 +217,10 @@ trait FreeFunctions {
   def reset[A](r: Trampoline[A]): Trampoline[A] = { val a = r.run; return_(a) }
 
   /** Suspend the given computation in a single step. */
-  def return_[S[+_], A](value: => A)(implicit S: Pointed[S]): Free[S, A] =
+  def return_[S[+_], A](value: => A)(implicit S: Applicative[S]): Free[S, A] =
     Suspend[S, A](S.point(Return[S, A](value)))
 
-  def suspend[S[+_], A](value: => Free[S, A])(implicit S: Pointed[S]): Free[S, A] =
+  def suspend[S[+_], A](value: => Free[S, A])(implicit S: Applicative[S]): Free[S, A] =
     Suspend[S, A](S.point(value))
 
   /** A trampoline step that doesn't do anything. */
