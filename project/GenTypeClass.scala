@@ -29,9 +29,8 @@ object TypeClass {
   lazy val each = TypeClass("Each", *->*)
   lazy val index = TypeClass("Index", *->*)
   lazy val functor = TypeClass("Functor", *->*)
-  lazy val pointed = TypeClass("Pointed", *->*, extendsList = Seq(functor))
   lazy val apply: TypeClass = TypeClass("Apply", *->*, extendsList = Seq(functor))
-  lazy val applicative = TypeClass("Applicative", *->*, extendsList = Seq(apply, pointed))
+  lazy val applicative = TypeClass("Applicative", *->*, extendsList = Seq(apply))
   lazy val zip = TypeClass("Zip", *->*)
   lazy val unzip = TypeClass("Unzip", *->*)
   lazy val bind = TypeClass("Bind", *->*, extendsList = Seq(apply))
@@ -86,7 +85,6 @@ object TypeClass {
     each,
     index,
     functor,
-    pointed,
     contravariant,
     copointed,
     apply,
