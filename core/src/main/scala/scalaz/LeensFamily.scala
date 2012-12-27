@@ -172,6 +172,30 @@ sealed trait LeensFamily[-A1, +A2, +B1, -B2] {
   /** alias for `product` */
   def ***[C1, C2, D1, D2](that: LeensFamily[ C1, C2, D1, D2]): LeensFamily[(A1, C1), (A2, C2), (B1, D1), (B2, D2)] = product(that)
 
+  trait LensLaw {
+    def identity[A >: A2 <: A1, B >: B1 <: B2](a: A)(implicit A: Equal[A]): Boolean = {
+      val c = run(a)
+      A.equal(c.put(c.pos: B), a)
+    }
+    def retention[A >: A2 <: A1, B >: B1 <: B2](a: A, b: B)(implicit B: Equal[B]): Boolean =
+      B.equal(run(run(a).put(b): A).pos, b)
+    def doubleSet[A >: A2 <: A1, B >: B1 <: B2](a: A, b1: B, b2: B)(implicit A: Equal[A]): Boolean = {
+      val r = run(a)
+      A.equal(run(r.put(b1): A) put b2, r put b2)
+    }
+  }
+
+  def lensLaw = new LensLaw {}
+
+  /* todo
+  /** A homomorphism of lens categories */
+  def partial(implicit F: Functor[F]): PLensFamilyT[F, A1, A2, B1, B2] =
+    PLensFamilyT.plensFamilyT(a => F.map(run(a))(x => Some(x):Option[IndexedStore[B1, B2, A2]]))
+
+  /** alias for `partial` */
+  def unary_~(implicit F: Functor[F]): PLensFamilyT[F, A1, A2, B1, B2] =
+    partial
+    */
 
 
 }
