@@ -217,6 +217,8 @@ package object scalaz {
   type PLensFamily[-A1, +A2, +B1, -B2] = PLensFamilyT[Id, A1, A2, B1, B2]
   type PLens[A, B] = PLensT[Id, A, B]
 
+  type PLeens[A, B] = PLeensFamily[A, A, B, B]
+
   // important to define here, rather than at the top-level, to avoid Scala 2.9.2 bug
   object PLensT extends PLensTFunctions with PLensTInstances {
     def apply[F[+_], A, B](r: A => F[Option[Store[B, A]]]): PLensT[F, A, B] =
@@ -232,6 +234,7 @@ package object scalaz {
   }
 
   type @?>[A, B] = PLens[A, B]
+  type @@?>[A, B] = PLeens[A, B]
 
   type PIndexedStateT[F[+_], -S1, +S2, +A] = IndexedStateT[F, S1, S2, Option[A]]
   type PStateT[F[+_], S, +A] = PIndexedStateT[F, S, S, A]

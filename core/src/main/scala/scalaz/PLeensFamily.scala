@@ -209,26 +209,457 @@ sealed trait PLeensFamily[-A1, +A2, +B1, -B2] {
 }
 
 object PLeensFamily extends PLeensFunctions with PLeensInstances {
-  /*
-  def apply[F[+_], A1, A2, B1, B2](r: A1 => F[Option[IndexedStore[B1, B2, A2]]]): PLensFamilyT[F, A1, A2, B1, B2] =
-    plensFamilyT(r)
-    */
+
+  def apply[A1, A2, B1, B2](r: A1 => Option[IndexedStore[B1, B2, A2]]): PLeensFamily[A1, A2, B1, B2] =
+    plensFamily(r)
 }
 
 trait PLeensFamilyFunctions extends PLeensInstances {
 
+  import BijectionT._
+
   def plensFamily[A1, A2, B1, B2](r: A1 => Option[IndexedStore[B1, B2, A2]]): PLeensFamily[A1, A2, B1, B2] = new PLeensFamily[A1, A2, B1, B2] {
     def run(a: A1): Option[IndexedStore[B1, B2, A2]] = r(a)
   }
+
+  def plensFamilyf[A1, A2, B1, B2](r: PartialFunction[A1, IndexedStore[B1, B2, A2]]): PLeensFamily[A1, A2, B1, B2] =
+    plensFamily(r.lift)
+
+  def plensFamilyg[A1, A2, B1, B2](set: A1 => Option[B2 => A2], get: A1 => Option[B1]): PLeensFamily[A1, A2, B1, B2] =
+    plensFamily(a => for {
+      w <- set(a)
+      x <- get(a)
+    } yield IndexedStore(w, x))
+
+  /** The identity partial lens family for a given pair of objects */
+  def plensFamilyId[A1, A2]: PLeensFamily[A1, A2, A1, A2] =
+    LeensFamily.lensFamilyId[A1, A2].partial
+
+  /** A partial lens family that discards the choice of right or left from disjunction */
+  def codiagPLensFamily[A1, A2]: PLeensFamily[A1 \/ A1, A2 \/ A2, A1, A2] =
+    plensFamilyId[A1, A2] ||| plensFamilyId[A1, A2]
+
+  /** The always-null partial lens family */
+  def nilFamily[A1, A2, B1, B2]: PLeensFamily[A1, A2, B1, B2] =
+    plensFamily(_ => None)
+
+  def somePLensFamily[A1, A2]: PLeensFamily[Option[A1], Option[A2], A1, A2] =
+    plensFamily(_ map (z => IndexedStore(Some(_), z)))
+
+  def leftPLensFamily[A1, A2, B]: PLeensFamily[A1 \/ B, A2 \/ B, A1, A2] =
+    plensFamily {
+      case -\/(a) => Some(IndexedStore(-\/(_), a))
+      case \/-(_) => None
+    }
+
+  def rightPLensFamily[A, B1, B2]: PLeensFamily[A \/ B1, A \/ B2, B1, B2] =
+    plensFamily {
+      case \/-(b) => Some(IndexedStore(\/-(_), b))
+      case -\/(_) => None
+    }
+
+  def tuple2PLensFamily[S1, S2, A, B](lens: PLeensFamily[S1, S2, (A, B), (A, B)]):
+  (PLeensFamily[S1, S2, A, A], PLeensFamily[S1, S2, B, B]) =
+    PLensFamilyUnzip[S1, S2].unzip(lens)
+
+  def tuple3PLensFamily[S1, S2, A, B, C](lens: PLeensFamily[S1, S2, (A, B, C), (A, B, C)]):
+  (PLeensFamily[S1, S2, A, A], PLeensFamily[S1, S2, B, B], PLeensFamily[S1, S2, C, C]) =
+    PLensFamilyUnzip[S1, S2].unzip3(lens.xmapbB(tuple3B))
+
+  def tuple4PLensFamily[S1, S2, A, B, C, D](lens: PLeensFamily[S1, S2, (A, B, C, D), (A, B, C, D)]):
+  (PLeensFamily[S1, S2, A, A], PLeensFamily[S1, S2, B, B], PLeensFamily[S1, S2, C, C], PLeensFamily[S1, S2, D, D]) =
+    PLensFamilyUnzip[S1, S2].unzip4(lens.xmapbB(tuple4B))
+
+  def tuple5PLensFamily[S1, S2, A, B, C, D, E](lens: PLeensFamily[S1, S2, (A, B, C, D, E), (A, B, C, D, E)]):
+  (PLeensFamily[S1, S2, A, A], PLeensFamily[S1, S2, B, B], PLeensFamily[S1, S2, C, C], PLeensFamily[S1, S2, D, D], PLeensFamily[S1, S2, E, E]) =
+    PLensFamilyUnzip[S1, S2].unzip5(lens.xmapbB(tuple5B))
+
+  def tuple6PLensFamily[S1, S2, A, B, C, D, E, H](lens: PLeensFamily[S1, S2, (A, B, C, D, E, H), (A, B, C, D, E, H)]):
+  (PLeensFamily[S1, S2, A, A], PLeensFamily[S1, S2, B, B], PLeensFamily[S1, S2, C, C], PLeensFamily[S1, S2, D, D], PLeensFamily[S1, S2, E, E], PLeensFamily[S1, S2, H, H]) =
+    PLensFamilyUnzip[S1, S2].unzip6(lens.xmapbB(tuple6B))
+
+  def tuple7PLensFamily[S1, S2, A, B, C, D, E, H, I](lens: PLeensFamily[S1, S2, (A, B, C, D, E, H, I), (A, B, C, D, E, H, I)]):
+  (PLeensFamily[S1, S2, A, A], PLeensFamily[S1, S2, B, B], PLeensFamily[S1, S2, C, C], PLeensFamily[S1, S2, D, D], PLeensFamily[S1, S2, E, E], PLeensFamily[S1, S2, H, H], PLeensFamily[S1, S2, I, I]) =
+    PLensFamilyUnzip[S1, S2].unzip7(lens.xmapbB(tuple7B))
+
+  def eitherLensFamily[S1, S2, A, B](l: PLeensFamily[S1, S2, A \/ B, A \/ B]): (PLeensFamily[S1, S2, A, A], PLeensFamily[S1, S2, B, B]) =
+    (
+    leftPLensFamily compose l
+    , rightPLensFamily compose l
+    )
+
+  import LazyOption._
+
+  def lazySomePLensFamily[A1, A2]: PLeensFamily[LazyOption[A1], LazyOption[A2], A1, A2] =
+    plensFamily(_.fold(z => Some(IndexedStore(lazySome(_), z)), None))
+
+  import LazyEither._
+
+  def lazyLeftPLensFamily[A1, A2, B]: PLeensFamily[LazyEither[A1, B], LazyEither[A2, B], A1, A2] =
+    plensFamily(_.fold(a => Some(IndexedStore(lazyLeft(_), a)), _ => None))
+
+  def lazyRightPLensFamily[A, B1, B2]: PLeensFamily[LazyEither[A, B1], LazyEither[A, B2], B1, B2] =
+    plensFamily(_.fold(_ => None, b => Some(IndexedStore(lazyRight(_), b))))
+
+  def factorPLensFamily[A1, A2, B1, B2, C1, C2]: PLeensFamily[((A1, B1) \/ (A1, C1)), ((A2, B2) \/ (A2, C2)), (A1, B1 \/ C1), (A2, B2 \/ C2)] =
+    ~LeensFamily.factorLensFamily
+
+  def distributePLensFamily[A1, A2, B1, B2, C1, C2]: PLeensFamily[(A1, B1 \/ C1), (A2, B2 \/ C2), ((A1, B1) \/ (A1, C1)), ((A2, B2) \/ (A2, C2))] =
+    ~LeensFamily.distributeLensFamily
 }
 
 trait PLeensFunctions extends PLeensFamilyFunctions with PLeensInstances {
 
+  /*
+
+  import StoreT._
+
+   */
+  import BijectionT._
+
+  def plens[A, B](r: A => Option[Store[B, A]]): PLeens[A, B] = new PLeens[A, B] {
+    def run(a: A): Option[Store[B, A]] = r(a)
+  }
+
+  def plensf[A, B](r: PartialFunction[A, Store[B, A]]): PLeens[A, B] =
+    plens(r.lift)
+
+  def plensg[A, B](set: A => Option[B => A], get: A => Option[B]): PLeens[A, B] =
+    plens(a => for {
+      w <- set(a)
+      x <- get(a)
+    } yield Store(w, x))
+
+  def plensgf[A, B](set: PartialFunction[A, B => A], get: PartialFunction[A, B]): PLeens[A, B] =
+    plensg(set.lift, get.lift)
+
+  /** The identity partial lens for a given object */
+  def plensId[A]: PLeens[A, A] =
+    LeensFamily.lensId[A].partial
+
+  /** The trivial partial lens that can retrieve Unit from anything */
+  def trivialPLens[A]: PLeens[A, Unit] =
+    LeensFamily.trivialLens[A].partial
+
+  /** A lens that discards the choice of right or left from disjunction */
+  def codiagPLens[A]: PLeens[A \/ A, A] =
+    plensId[A] ||| plensId[A]
+
+  /** The always-null partial lens */
+  def nil[A, B]: PLeens[A, B] =
+    plens(_ => None)
+
+  def somePLens[A]: Option[A] @@?> A =
+    plens(_ map (z => Store(Some(_), z)))
+
+  def leftPLens[A, B]: (A \/ B) @@?> A =
+    plens {
+      case -\/(a) => Some(Store(-\/(_), a))
+      case \/-(_) => None
+    }
+
+  def rightPLens[A, B]: (A \/ B) @@?> B =
+    plens {
+      case \/-(b) => Some(Store(\/-(_), b))
+      case -\/(_) => None
+    }
+
+  def tuple2PLens[S, A, B](lens: PLeens[S, (A, B)]):
+  (PLeens[S, A], PLeens[S, B]) =
+    PLensFamilyUnzip[S, S].unzip(lens)
+
+  def tuple3PLens[S, A, B, C](lens: PLeens[S, (A, B, C)]):
+  (PLeens[S, A], PLeens[S, B], PLeens[S, C]) =
+    PLensFamilyUnzip[S, S].unzip3(lens.xmapbB(tuple3B))
+
+  def tuple4PLens[ S, A, B, C, D](lens: PLeens[S, (A, B, C, D)]):
+  (PLeens[S, A], PLeens[S, B], PLeens[S, C], PLeens[S, D]) =
+    PLensFamilyUnzip[S, S].unzip4(lens.xmapbB(tuple4B))
+
+  def tuple5PLens[S, A, B, C, D, E](lens: PLeens[S, (A, B, C, D, E)]):
+  (PLeens[S, A], PLeens[S, B], PLeens[S, C], PLeens[S, D], PLeens[S, E]) =
+    PLensFamilyUnzip[S, S].unzip5(lens.xmapbB(tuple5B))
+
+  def tuple6PLens[S, A, B, C, D, E, H](lens: PLeens[S, (A, B, C, D, E, H)]):
+  (PLeens[S, A], PLeens[S, B], PLeens[S, C], PLeens[S, D], PLeens[S, E], PLeens[S, H]) =
+    PLensFamilyUnzip[S, S].unzip6(lens.xmapbB(tuple6B))
+
+  def tuple7PLens[S, A, B, C, D, E, H, I](lens: PLeens[S, (A, B, C, D, E, H, I)]):
+  (PLeens[S, A], PLeens[S, B], PLeens[S, C], PLeens[S, D], PLeens[S, E], PLeens[S, H], PLeens[S, I]) =
+    PLensFamilyUnzip[S, S].unzip7(lens.xmapbB(tuple7B))
+
+  def eitherLens[S, A, B](l: S @@?> (A \/ B)): (S @@?> A, S @@?> B) =
+    (
+    leftPLens compose l
+    , rightPLens compose l
+    )
+
+  import LazyOption._
+
+  def lazySomePLens[A]: LazyOption[A] @@?> A =
+    plens(_.fold(z => Some(Store(lazySome(_), z)), None))
+
+  import LazyEither._
+
+  def lazyLeftPLens[A, B]: LazyEither[A, B] @@?> A =
+    plens(_.fold(a => Some(Store(lazyLeft(_), a)), _ => None))
+
+  def lazyRightPLens[A, B]: LazyEither[A, B] @@?> B =
+    plens(_.fold(_ => None, b => Some(Store(lazyRight(_), b))))
+
+  def listHeadPLens[A]: List[A] @@?> A =
+    plens {
+      case Nil => None
+      case h :: t => Some(Store(_ :: t, h))
+    }
+
+  def listTailPLens[A]: List[A] @@?> List[A] =
+    plens {
+      case Nil => None
+      case h :: t => Some(Store(h :: _, t))
+    }
+
+  def listNthPLens[A](n: Int): List[A] @@?> A =
+    if(n < 0)
+      nil
+    else if(n == 0)
+      listHeadPLens
+    else
+      listNthPLens(n - 1) compose listTailPLens
+
+  def listLookupByPLens[K, V](p: K => Boolean): List[(K, V)] @@?> V = {
+    @annotation.tailrec
+    def lookupr(t: (List[(K, V)], (K, V), List[(K, V)])): Option[(List[(K, V)], (K, V), List[(K, V)])] =
+      t match {
+        case (_, (k, _), _) if p(k) => Some(t)
+        case (_, _     , Nil)       => None
+        case (l, x     , r::rs)     => lookupr(x::l, r, rs)
+      }
+    plens {
+      case Nil => None
+      case h :: t => lookupr(Nil, h, t) map {
+        case (l, (k, v), r) => Store(w => l.reverse ::: (k, w) :: r, v)
+      }
+    }
+  }
+
+  def listLookupPLens[K: Equal, V](k: K): List[(K, V)] @@?> V =
+    listLookupByPLens(Equal[K].equal(k, _))
+
+  def vectorHeadPLens[A]: Vector[A] @@?> A =
+    vectorNthPLens(0)
+
+  def vectorNthPLens[A](n: Int): Vector[A] @@?> A =
+    plens(v =>
+      v.lift(n) map (a => Store(x => v patch (n, Vector(x), 1), a)))
+
+  def vectorLastPLens[A]: Vector[A] @@?> A =
+    plens(v =>
+      v.lastOption map (a => Store(x => v patch (v.length - 1, Vector(x), 1), a)))
+
+  import Stream._
+
+  def streamHeadPLens[A]: Stream[A] @@?> A =
+    plens {
+      case Empty => None
+      case h #:: t => Some(Store(_ #:: t, h))
+    }
+
+  def streamTailPLens[A]: Stream[A] @@?> Stream[A] =
+    plens {
+      case Empty => None
+      case h #:: t => Some(Store(h #:: _, t))
+    }
+
+  def streamNthPLens[A](n: Int): Stream[A] @@?> A =
+    if(n < 0)
+      nil
+    else if(n == 0)
+      streamHeadPLens
+    else
+      streamNthPLens(n - 1) compose streamTailPLens
+
+  def streamLookupByPLens[K, V](p: K => Boolean): Stream[(K, V)] @@?> V = {
+    @annotation.tailrec
+    def lookupr(t: (Stream[(K, V)], (K, V), Stream[(K, V)])): Option[(Stream[(K, V)], (K, V), Stream[(K, V)])] =
+      t match {
+        case (_, (k, _), _) if p(k)    => Some(t)
+        case (_, _     , Stream.Empty) => None
+        case (l, x     , r #:: rs)     => lookupr(x #:: l, r, rs)
+      }
+    plens {
+      case Stream.Empty => None
+      case h #:: t => lookupr(Stream.empty, h, t) map {
+        case (l, (k, v), r) => Store(w => l.reverse #::: (k, w) #:: r, v)
+      }
+    }
+  }
+
+  def streamLookupPLens[K: Equal, V](k: K): Stream[(K, V)] @@?> V =
+    streamLookupByPLens(Equal[K].equal(k, _))
+
+  def ephemeralStreamHeadPLens[A]: EphemeralStream[A] @@?> A =
+    plens(s =>
+      if(s.isEmpty)
+        None
+      else
+        Some(Store(EphemeralStream.cons(_, s.tail()), s.head()))
+    )
+
+  def ephemeralStreamTailPLens[A]: EphemeralStream[A] @@?> EphemeralStream[A] =
+    plens(s =>
+      if(s.isEmpty)
+        None
+      else
+        Some(Store(EphemeralStream.cons(s.head(), _), s.tail()))
+    )
+
+  def ephemeralStreamNthPLens[A](n: Int): EphemeralStream[A] @@?> A =
+    if(n < 0)
+      nil
+    else if(n == 0)
+      ephemeralStreamHeadPLens
+    else
+      ephemeralStreamNthPLens(n - 1) compose ephemeralStreamTailPLens
+
+  def ephemeralStreamLookupByPLens[K, V](p: K => Boolean): EphemeralStream[(K, V)] @@?> V = {
+    import EphemeralStream.cons
+
+    @annotation.tailrec
+    def lookupr(t: (EphemeralStream[(K, V)], (K, V), EphemeralStream[(K, V)])): Option[(EphemeralStream[(K, V)], (K, V), EphemeralStream[(K, V)])] =
+      t match {
+        case (_, (k, _), _) if p(k)    => Some(t)
+        case (l, x     , s) =>
+            if(s.isEmpty)
+              None
+            else
+              lookupr((cons(x, l), s.head(), s.tail()))
+      }
+    plens(s =>
+      if(s.isEmpty)
+        None
+      else
+        lookupr((EphemeralStream.emptyEphemeralStream, s.head(), s.tail())) map {
+          case (l, (k, v), r) => Store(w => l.reverse ++ cons((k, w), r), v)
+        }
+    )
+  }
+
+  def ephemeralStreamLookupPLens[K: Equal, V](k: K): EphemeralStream[(K, V)] @@?> V =
+    ephemeralStreamLookupByPLens(Equal[K].equal(k, _))
+
+  import LeensFamily.mapVLens
+
+  def mapVPLens[K, V](k: K): Map[K, V] @@?> V =
+    somePLens compose ~mapVLens[K, V](k)
+
+  def factorPLens[A, B, C]: ((A, B) \/ (A, C)) @@?> (A, B \/ C) =
+    ~LeensFamily.factorLens
+
+  def distributePLens[A, B, C]: (A, B \/ C) @@?> ((A, B) \/ (A, C)) =
+    ~LeensFamily.distributeLens
+
+  import util.parsing.json._
+
+  def scalaJSONObjectPLens: JSONType @@?> Map[String, Any] =
+    plens {
+      case JSONObject(m) => Some(Store(JSONObject(_), m))
+      case _             => None
+    }
+
+  def scalaJSONArrayPLens: JSONType @@?> List[Any] =
+    plens {
+      case JSONArray(a) => Some(Store(JSONArray(_), a))
+      case _            => None
+    }
 }
 
-trait PLeensInstance0 {
+trait PLeensInstances0 {
+  implicit def plensArrI: PLeensArrId = new PLeensArrId {
+  }
 
 }
 
-trait PLeensInstances extends PLeensInstance0 {
+trait PLeensInstances extends PLeensInstances0 {
+
+  import PLeensFamily._
+
+  implicit def plensCategory: PLeensCategory = new PLeensCategory {
+  }
+
+  /** Partial Lenses may be used implicitly as State monadic actions that get the potentially viewed portion of the state */
+  implicit def PLensFamilyState[A, B](plens: PLeensFamily[A, _, B, _]): PState[A, B] =
+    plens.st
+
+  implicit def PLensFamilyUnzip[S, R]: Unzip[({type λ[α] = PLeensFamily[S, R, α, α]})#λ] =
+    new Unzip[({type λ[α] = PLeensFamily[S, R, α, α]})#λ] {
+      def unzip[A, B](a: PLeensFamily[S, R, (A, B), (A, B)]) =
+        (
+          plensFamily(x => a run x map (c => {
+            val (p, q) = c.pos
+            IndexedStore(a => c.put((a, q)): R, p)
+          }))
+        , plensFamily(x => a run x map (c => {
+            val (p, q) = c.pos
+            IndexedStore(a => c.put((p, a)): R, q)
+          }))
+        )
+    }
+
+  /** Allow the illusion of imperative updates to potential numbers viewed through a partial lens */
+  case class NumericPLens[S, N: Numeric](lens: S @@?> N, num: Numeric[N]) {
+    def +=(that: N): PState[S, N] =
+      lens %= (num.minus(_, that))
+
+    def -=(that: N): PState[S, N] =
+      lens %= (num.minus(_, that))
+
+    def *=(that: N): PState[S, N] =
+      lens %= (num.times(_, that))
+  }
+
+  implicit def numericPLens[S, N: Numeric](lens: S @@?> N) =
+    NumericPLens[S, N](lens, implicitly[Numeric[N]])
+
+  /** Allow the illusion of imperative updates to potential numbers viewed through a partial lens */
+  case class FractionalPLens[S, F](lens: S @@?> F, frac: Fractional[F]) {
+    def /=(that: F): PState[S, F] =
+      lens %= (frac.div(_, that))
+  }
+
+  implicit def fractionalPLens[S, F: Fractional](lens: S @@?> F) =
+    FractionalPLens[S, F](lens, implicitly[Fractional[F]])
+
+  /** Allow the illusion of imperative updates to potential numbers viewed through a partial lens */
+  case class IntegralPLens[S, I](lens: S @@?> I, ig: Integral[I]) {
+    def %=(that: I): PState[S, I] =
+      lens %= (ig.quot(_, that))
+  }
+
+  implicit def integralPLens[S, I: Integral](lens: S @@?> I) =
+    IntegralPLens[S, I](lens, implicitly[Integral[I]])
+
+}
+
+private[scalaz] trait PLeensArrId extends ArrId[PLeens] {
+  def id[A]: PLeens[A, A] = PLeensFamily.plensId
+}
+
+private[scalaz] trait PLeensCategory
+  extends Choice[PLeens]
+  with Split[PLeens]
+  with PLeensArrId {
+
+  def compose[A, B, C](bc: PLeens[B, C], ab: PLeens[A, B]): PLeens[A, C] = ab >=> bc
+
+  def choice[A, B, C](f: => PLeens[A, C], g: => PLeens[B, C]): PLeens[A \/ B, C] =
+    PLeensFamily.plens[A \/ B, C] {
+      case -\/(a) =>
+        f run a map (_ map (-\/(_)))
+      case \/-(b) =>
+        g run b map (_ map (\/-(_)))
+    }
+
+  def split[A, B, C, D](f: PLeens[A, B], g: PLeens[C, D]): PLeens[(A,  C), (B, D)] =
+    f *** g
 }

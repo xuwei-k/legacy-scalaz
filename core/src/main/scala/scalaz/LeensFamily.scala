@@ -187,16 +187,13 @@ sealed trait LeensFamily[-A1, +A2, +B1, -B2] {
 
   def lensLaw = new LensLaw {}
 
-  /* todo
   /** A homomorphism of lens categories */
-  def partial(implicit F: Functor[F]): PLensFamilyT[F, A1, A2, B1, B2] =
-    PLensFamilyT.plensFamilyT(a => F.map(run(a))(x => Some(x):Option[IndexedStore[B1, B2, A2]]))
+  def partial: PLeensFamily[A1, A2, B1, B2] =
+    PLeensFamily.plensFamily(a => Some(run(a)):Option[IndexedStore[B1, B2, A2]])
 
   /** alias for `partial` */
-  def unary_~(implicit F: Functor[F]): PLensFamilyT[F, A1, A2, B1, B2] =
+  def unary_~ : PLeensFamily[A1, A2, B1, B2] =
     partial
-    */
-
 
 }
 
@@ -644,14 +641,14 @@ trait LeensInstances extends LeensInstances0 {
 }
 
 private[scalaz] trait LeensArrId
-  extends ArrId[({type λ[α, β] = Leens[α, β]})#λ]{
+  extends ArrId[Leens]{
 
   def id[A] = LeensFamily.lensId
 }
 
 private[scalaz] trait LeensCategory
-  extends Choice[({type λ[α, β] = Leens[α, β]})#λ]
-  with Split[({type λ[α, β] = Leens[α, β]})#λ]
+  extends Choice[Leens]
+  with Split[Leens]
   with LeensArrId {
 
   def compose[A, B, C](bc: Leens[B, C], ab: Leens[A, B]): Leens[A, C] = ab >=> bc
