@@ -102,6 +102,76 @@ sealed trait LeensFamily[-A1, +A2, +B1, -B2] {
   def %==(f: B1 => B2): IndexedState[A1, A2, Unit] =
     mods_(f)
 
+  /** Contravariantly map a state action through a lens. */
+  def lifts[C](s: IndexedState[B1, B2, C]): IndexedState[A1, A2, C] =
+    IndexedState(a => modp(s(_), a))
+
+  def %%=[C](s: IndexedState[B1, B2, C]): IndexedState[A1, A2, C] =
+    lifts(s)
+
+  /** Map the function `f` over the lens as a state action. */
+  def map[C, A <: A1](f: B1 => C): State[A, C] =
+    State(a => (a, f(get(a))))
+
+  /** Map the function `f` over the value under the lens, as a state action. */
+  def >-[C, A <: A1](f: B1 => C): State[A, C] = map(f)
+
+  /** Bind the function `f` over the value under the lens, as a state action. */
+  def flatMap[C, X1 <: A1, X2 >: A2](f: B1 => IndexedState[X1, X2, C]): IndexedState[X1, X2, C] =
+    IndexedState(a => f(get(a))(a))
+
+  /** Bind the function `f` over the value under the lens, as a state action. */
+  def >>-[C, X1 <: A1, X2 >: A2](f: B1 => IndexedState[X1, X2, C]): IndexedState[X1, X2, C] =
+    flatMap[C, X1, X2](f)
+
+  /** Sequence the monadic action of looking through the lens to occur before the state action `f`. */
+  def ->>-[C, X1 <: A1, X2 >: A2](f: => IndexedState[X1, X2, C]): IndexedState[X1, X2, C] =
+    flatMap(_ => f)
+
+  /** Contravariantly mapping the state of a state monad through a lens is a natural transformation */
+  def liftsNT: ({type m[+x] = IndexedState[B1,B2,x]})#m ~> ({type n[+x] = IndexedState[A1,A2,x]})#n =
+    new (({type m[+x] = IndexedState[B1,B2,x]})#m ~> ({type n[+x] = IndexedState[A1,A2,x]})#n) {
+      def apply[C](s : IndexedState[B1,B2,C]): IndexedState[A1,A2,C] = IndexedState[A1,A2,C](a => modp(s(_), a))
+    }
+
+  /** Lenses can be composed */
+  def compose[C1, C2](that: LeensFamily[C1, C2, A1, A2]): LeensFamily[C1, C2, B1, B2] =
+    lensFamily(c => {
+      val (ac, a) = that.run(c).run
+      val (ba, b) = run(a).run
+      IndexedStore(ac compose ba, b)
+    })
+
+  /** alias for `compose` */
+  def <=<[C1, C2](that: LeensFamily[C1, C2, A1, A2]): LeensFamily[C1, C2, B1, B2] = compose(that)
+
+  def andThen[C1, C2](that: LeensFamily[B1, B2, C1, C2]): LeensFamily[A1, A2, C1, C2] =
+    that compose this
+
+  /** alias for `andThen` */
+  def >=>[C1, C2](that: LeensFamily[B1, B2, C1, C2]): LeensFamily[A1, A2, C1, C2] = andThen(that)
+
+  /** Two lenses that view a value of the same type can be joined */
+  def sum[C1, C2, B1m >: B1, B2m <: B2](that: => LeensFamily[C1, C2, B1m, B2m]): LeensFamily[A1 \/ C1, A2 \/ C2, B1m, B2m] =
+    lensFamily{
+      case -\/(a) =>
+        run(a) map  (-\/(_))
+      case \/-(c) =>
+        that run c map (\/-(_))
+    }
+
+  /** Alias for `sum` */
+  def |||[C1, C2, A1m <: A1, A2m >: A2, B1m >: B1, B2m <: B2](that: => LeensFamily[C1, C2, B1m, B2m]): LeensFamily[A1 \/ C1, A2 \/ C2, B1m, B2m] = sum(that)
+
+  /** Two disjoint lenses can be paired */
+  def product[C1, C2, D1, D2](that: LeensFamily[C1, C2, D1, D2]): LeensFamily[(A1, C1), (A2, C2), (B1, D1), (B2, D2)] =
+    lensFamily {
+      case (a, c) => run(a) *** that.run(c)
+    }
+
+  /** alias for `product` */
+  def ***[C1, C2, D1, D2](that: LeensFamily[ C1, C2, D1, D2]): LeensFamily[(A1, C1), (A2, C2), (B1, D1), (B2, D2)] = product(that)
+
 
 
 }
