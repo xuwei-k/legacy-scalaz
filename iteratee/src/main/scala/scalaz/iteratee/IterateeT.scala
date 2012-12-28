@@ -112,9 +112,9 @@ sealed trait IterateeT[E, F[_], A] {
     loop(this)
   }
 
-  def up[G[_]](implicit G: Applicative[G], F: Functor[F], FC: Copointed[F]): IterateeT[E, G, A] = {
+  def up[G[_]](implicit G: Applicative[G], F: Comonad[F]): IterateeT[E, G, A] = {
     mapI(new (F ~> G) {
-      def apply[A](a: F[A]) = G.point(FC.copoint(a))
+      def apply[A](a: F[A]) = G.point(F.copoint(a))
     })
   }
 
