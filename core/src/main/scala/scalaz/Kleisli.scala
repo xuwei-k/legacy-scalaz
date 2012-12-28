@@ -51,11 +51,11 @@ sealed trait Kleisli[M[+_], -A, +B] { self =>
   }
         
   import Liskov._
-  def unlift[N[+_], FF[+_], AA <: A, BB >: B](implicit M: Copointed[N], ev: this.type <~< Kleisli[({type λ[+α] = N[FF[α]]})#λ, AA, BB]): Kleisli[FF, AA, BB] = new Kleisli[FF, AA, BB] {
-    def run(a: AA) = Copointed[N].copoint(ev(self) run a)
+  def unlift[N[+_], FF[+_], AA <: A, BB >: B](implicit M: Comonad[N], ev: this.type <~< Kleisli[({type λ[+α] = N[FF[α]]})#λ, AA, BB]): Kleisli[FF, AA, BB] = new Kleisli[FF, AA, BB] {
+    def run(a: AA) = Comonad[N].copoint(ev(self) run a)
   }
 
-  def unliftId[N[+_], AA <: A, BB >: B](implicit M: Copointed[N], ev: this.type <~< Kleisli[({type λ[+α] = N[α]})#λ, AA, BB]): Reader[AA, BB] =
+  def unliftId[N[+_], AA <: A, BB >: B](implicit M: Comonad[N], ev: this.type <~< Kleisli[({type λ[+α] = N[α]})#λ, AA, BB]): Reader[AA, BB] =
     unlift[N, Id, AA, BB]
 
   def rwst[W, S](implicit M: Functor[M], W: Monoid[W]): ReaderWriterStateT[M, A, W, S, B] = ReaderWriterStateT(

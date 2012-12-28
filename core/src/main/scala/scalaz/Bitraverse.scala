@@ -81,7 +81,11 @@ trait Bitraverse[F[_, _]] extends Bifunctor[F] with Bifoldable[F] { self =>
   def bitraverseKTrampoline[S, G[+_] : Applicative, A, B, C, D](fa: F[A, B])(f: A => Kleisli[G, S, C])(g: B => Kleisli[G, S, D]): Kleisli[G, S, F[C, D]] = {
     import Free._
     implicit val A = Kleisli.kleisliMonadReader[Trampoline, S].compose(Applicative[G])
-    Kleisli(bitraverse[({type λ[α]=Kleisli[Trampoline, S, G[α]]})#λ, A, B, C, D](fa)(z => Kleisli[Id, S, G[C]](i => f(z)(i)).lift[Trampoline])(z => Kleisli[Id, S, G[D]](i => g(z)(i)).lift[Trampoline]).unliftId[Trampoline, S, G[F[C, D]]] run _)
+
+    Kleisli[G, S, F[C, D]](s => {
+      val kl = bitraverse[({type λ[α]=Kleisli[Trampoline, S, G[α]]})#λ, A, B, C, D](fa)(z => Kleisli[Id, S, G[C]](i => f(z)(i)).lift[Trampoline])(z => Kleisli[Id, S, G[D]](i => g(z)(i)).lift[Trampoline])
+      kl.run(s).run
+    })
   }
 
   def bifoldLShape[A,B,C](fa: F[A,B], z: C)(f: (C,A) => C)(g: (C,B) => C): (C, F[Unit, Unit]) =
