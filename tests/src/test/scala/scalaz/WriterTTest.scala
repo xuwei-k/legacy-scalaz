@@ -17,7 +17,7 @@ class WriterTTest extends Spec {
   checkAll(monad.laws[WriterTOptInt])
   checkAll(traverse.laws[WriterTOptInt])
   checkAll(bifunctor.laws[WriterTOpt])
-  checkAll(copointed.laws[({type λ[+α]=WriterT[NonEmptyList, Int, α]})#λ])
+  checkAll(functor.laws[({type λ[+α]=WriterT[NonEmptyList, Int, α]})#λ])
   checkAll(bitraverse.laws[WriterTOpt])
 
   implicit def writerArb[F[+_], W, A](implicit W: Arbitrary[W], A: Arbitrary[A]): Arbitrary[Writer[W, A]] =
@@ -31,7 +31,6 @@ class WriterTTest extends Spec {
     def monad[F[+_]: Monad, W: Monoid] = Monad[({type λ[+α]=WriterT[F, W, α]})#λ]
     def foldable[F[+_]: Foldable, W] = Foldable[({type λ[+α]=WriterT[F, W, α]})#λ]
     def traverse[F[+_]: Traverse, W] = Traverse[({type λ[+α]=WriterT[F, W, α]})#λ]
-    def copointed[F[+_]: Copointed, W] = Copointed[({type λ[+α]=WriterT[F, W, α]})#λ]
 
     def functor[F[+_]: Monad, W: Monoid] = Functor[({type λ[+α]=WriterT[F, W, α]})#λ]
     def apply[F[+_]: Monad, W: Monoid] = Apply[({type λ[+α]=WriterT[F, W, α]})#λ]
@@ -44,7 +43,6 @@ class WriterTTest extends Spec {
       def monad[W: Monoid] = Monad[({type λ[+α]=Writer[W, α]})#λ]
       def foldable[W] = Foldable[({type λ[+α]=Writer[W, α]})#λ](WriterT.writerTFoldable[Id, W])
       def traverse[W] = Traverse[({type λ[+α]=Writer[W, α]})#λ]
-      def copointed[W] = Copointed[({type λ[+α]=Writer[W, α]})#λ]
       def comonad[W] = Comonad[({type λ[+α]=Writer[W, α]})#λ]
     }
   }
