@@ -44,8 +44,7 @@ class KleisliTest extends Spec {
     def empty[F[+_] : PlusEmpty, A] = PlusEmpty[({type f[a] = Kleisli[F, A, a]})#f]
     def monadReader[F[+_] : Monad, A] = MonadReader[({type f[s, a] = Kleisli[F, s, a]})#f, A]
 
-    def arrId[F[+_]: Applicative, A] = ArrId[({type λ[α, β]=Kleisli[F, α, β]})#λ]
-    def category[F[+_]: Monad, A] = ArrId[({type λ[α, β]=Kleisli[F, α, β]})#λ]
+    def category[F[+_]: Monad, A] = Category[({type λ[α, β]=Kleisli[F, α, β]})#λ]
     def arrow[F[+_]: Monad, A] = Arrow[({type λ[α, β]=Kleisli[F, α, β]})#λ]
 
     // checking absence of ambiguity
@@ -60,8 +59,7 @@ class KleisliTest extends Spec {
       def readerFunctor[A] = Functor[({type λ[α] = Reader[A, α]})#λ]
       def readerApply[A] = Apply[({type λ[α] = Reader[A, α]})#λ]
       def readerMonadReader[A] = MonadReader[({type f[s, a] = Reader[s, a]})#f, A]
-      def readerArrId = ArrId[Reader]
-      def readerCategory = ArrId[Reader]
+      def readerCategory = Ca1tegory[Reader]
       def readerArrow = Arrow[Reader]
 
       // Sigh, more tests needed, see http://stackoverflow.com/questions/11913128/scalaz-7-why-using-type-alias-results-in-ambigous-typeclass-resolution-for-rea

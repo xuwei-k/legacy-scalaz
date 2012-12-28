@@ -15,7 +15,6 @@ class CokleisliTest extends Spec {
 
   object instances {
     def monad[F[_], W] = Monad[({type λ[α] = Cokleisli[F, W, α]})#λ]
-    def arrId[F[_] : Comonad, W] = ArrId[({type λ[α, β] = Cokleisli[F, α, β]})#λ]
     def compose[F[_], W](implicit F: Cojoin[F] with Functor[F]) = Compose[({type λ[α, β] = Cokleisli[F, α, β]})#λ]
     def arrow[F[_] : Comonad, W] = Arrow[({type λ[α, β] = Cokleisli[F, α, β]})#λ]
 
