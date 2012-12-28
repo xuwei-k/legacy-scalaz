@@ -7,7 +7,6 @@ trait ApplicativeOps[F[_],A] extends Ops[F[A]] {
   ////
   final def unlessM(cond: Boolean): F[Unit] = scalaz.std.boolean.unlessM(cond)(self)
   final def whenM(cond: Boolean): F[Unit] = scalaz.std.boolean.whenM(cond)(self)
-
   ////
 }
 
@@ -22,8 +21,15 @@ trait ToApplicativeOps extends ToApplicativeOps0 with ToApplyOps {
     new ApplicativeOps[F,A] { def self = v; implicit def F: Applicative[F] = F0 }
 
   ////
+  implicit def ApplicativeIdV[A](v: => A) = new ApplicativeIdV[A] {
+    lazy val self = v
+  }
 
-  ////
+  trait ApplicativeIdV[A] extends Ops[A] {
+    def point[F[_] : Applicative]: F[A] = Applicative[F].point(self)
+    def pure[F[_] : Applicative]: F[A] = Applicative[F].point(self)
+    def η[F[_] : Applicative]: F[A] = Applicative[F].point(self)
+  }  ////
 }
 
 trait ApplicativeSyntax[F[_]] extends ApplySyntax[F] {

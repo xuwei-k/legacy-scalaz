@@ -8,7 +8,7 @@ object StateTUsage extends App {
   def f[M[+_]: Functor] {
     Functor[({type l[a] = StateT[M, Int, a]})#l]
   }
-Sy
+
   def m[M[+_]: Monad] {
     Applicative[({type l[a] = StateT[M, Int, a]})#l]
     Monad[({type l[a] = StateT[M, Int, a]})#l]
