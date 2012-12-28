@@ -64,9 +64,6 @@ trait CokleisliFunctions {
 
 //  def redaer[A, B](r: A => B): Redaer[A, B] =
 //    Cokleisli[A, Identity, B](a => r(a.value))
-//
-//  def ksa[F[_] : Copointed, A]: Cokleisli[A, F, A] =
-//    Cokleisli(a => Copointed[F].copoint(a))
 }
 
 private[scalaz] trait CokleisliMonad[F[_], R] extends Monad[({type λ[α] = Cokleisli[F, R, α]})#λ] {

@@ -39,10 +39,9 @@ object TypeClass {
   lazy val traverse = TypeClass("Traverse", *->*, extendsList = Seq(functor, foldable))
 
   lazy val contravariant = TypeClass("Contravariant", *->*)
-  lazy val copointed = TypeClass("Copointed", *->*, extendsList = Seq(functor))
   lazy val cojoin = TypeClass("Cojoin", *->*, extendsList = Seq(functor))
   lazy val cobind = TypeClass("Cobind", *->*, extendsList = Seq(functor))
-  lazy val comonad = TypeClass("Comonad", *->*, extendsList = Seq(copointed, cojoin, cobind))
+  lazy val comonad = TypeClass("Comonad", *->*, extendsList = Seq(functor, cojoin, cobind))
   lazy val cozip = TypeClass("Cozip", *->*)
   lazy val codiagonal = TypeClass("Codiagonal", *^*->*)
 
@@ -86,7 +85,6 @@ object TypeClass {
     index,
     functor,
     contravariant,
-    copointed,
     apply,
     applicative,
     zip,
