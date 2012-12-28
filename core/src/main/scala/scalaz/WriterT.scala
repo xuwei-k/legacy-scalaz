@@ -305,6 +305,7 @@ private[scalaz] trait WriterTBitraverse[F[+_]] extends Bitraverse[({type λ[+α,
 }
 
 private[scalaz] trait WriterComonad[W] extends Comonad[({type λ[+α] = Writer[W, α]})#λ] with WriterTFunctor[Id, W] {
+  def copoint[A](p: Writer[W, A]): A = p.value
 
   override def cojoin[A](fa: Writer[W, A]): Writer[W, Writer[W, A]] =
     Writer(fa.written, fa)

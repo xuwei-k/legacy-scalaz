@@ -22,6 +22,12 @@ trait FunctionInstances extends FunctionInstances0 {
 
     def copoint[A](p: () => A) = p()
 
+    def cobind[A, B](fa: Function0[A])(f: Function0[A] => B) =
+      () => f(fa)
+
+    def cojoin[A](a: Function0[A]): Function0[Function0[A]] =
+      () => a
+
     def bind[A, B](fa: () => A)(f: (A) => () => B) = () => f(fa())()
 
     override def map[A,B](fa: () => A)(f: A => B) = () => f(fa())

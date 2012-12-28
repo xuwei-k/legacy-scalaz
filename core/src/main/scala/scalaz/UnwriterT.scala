@@ -105,9 +105,6 @@ trait UnwriterTInstances0 extends UnwriterTInstances1 {
   implicit def unwriterTBind[F[+_], W](implicit F0: Bind[F]) = new UnwriterTBind[F, W] {
     implicit def F = F0
   }
-  implicit def unwriterTCopointed[F[+_], W](implicit F0: Copointed[F]) = new UnwriterTCopointed[F, W] {
-    implicit def F = F0
-  }
   implicit def unwriterTFoldable[F[+_], W](implicit F0: Foldable[F]) = new UnwriterTFoldable[F, W] {
     implicit def F = F0
   }
@@ -215,17 +212,13 @@ private[scalaz] trait UnwriterTBitraverse[F[+_]] extends Bitraverse[({type λ[+�
     fab.bitraverse(f, g)
 }
 
-private[scalaz] trait UnwriterTCopointed[F[+_], W] extends Copointed[({type λ[+α] = UnwriterT[F, W, α]})#λ] with UnwriterTFunctor[F, W] {
-  implicit def F: Copointed[F]
-
-  def copoint[A](p: UnwriterT[F, W, A]): A = F.copoint(p.value)
-}
-
-private[scalaz] trait UnwriterComonad[W] extends Comonad[({type λ[+α] = Unwriter[W, α]})#λ] with UnwriterTCopointed[Id, W] {
+private[scalaz] trait UnwriterComonad[W] extends Comonad[({type λ[+α] = Unwriter[W, α]})#λ] with UnwriterTFunctor[Id, W] {
 
   override def cojoin[A](fa: Unwriter[W, A]): Unwriter[W, Unwriter[W, A]] =
     Unwriter(fa.unwritten, fa)
 
   override def cobind[A, B](fa: Unwriter[W, A])(f: (Unwriter[W, A]) => B): Unwriter[W, B] =
     Unwriter(fa.unwritten, f(fa))
+  def copoint[A](p: Unwriter[W, A]): A = p.value
+
 }

@@ -194,14 +194,6 @@ trait IsomorphismContravariant[F[_], G[_]] extends Contravariant[F] {
   def contramap[A, B](r: F[A])(f: B => A): F[B] = iso.from(G.contramap(iso.to(r))(f))
 }
 
-trait IsomorphismCopointed[F[_], G[_]] extends Copointed[F] {
-  implicit def G: Copointed[G]
-
-  def iso: F <~> G
-
-  def copoint[A](p: F[A]): A = G.copoint(iso.to(p))
-}
-
 trait IsomorphismApply[F[_], G[_]] extends Apply[F] with IsomorphismFunctor[F, G] {
   implicit def G: Apply[G]
 
@@ -226,7 +218,7 @@ trait IsomorphismMonad[F[_], G[_]] extends Monad[F] with IsomorphismApplicative[
   implicit def G: Monad[G]
 }
 
-trait IsomorphismCojoin[F[_], G[_]] extends Cojoin[F] {
+trait IsomorphismCojoin[F[_], G[_]] extends Cojoin[F] with IsomorphismFunctor[F, G] {
   implicit def G: Cojoin[G] with Functor[G]
 
   def iso: F <~> G
@@ -234,8 +226,10 @@ trait IsomorphismCojoin[F[_], G[_]] extends Cojoin[F] {
   def cojoin[A](a: F[A]): F[F[A]] = iso.from(G.map(G.cojoin(iso.to(a)))(iso.from.apply))
 }
 
-trait IsomorphismComonad[F[_], G[_]] extends Comonad[F] with IsomorphismCojoin[F, G] with IsomorphismCopointed[F, G] {
-  implicit def G: Comonad[G] with Functor[G] with Copointed[G]
+trait IsomorphismComonad[F[_], G[_]] extends Comonad[F] with IsomorphismCojoin[F, G] {
+  implicit def G: Comonad[G] with Functor[G]
+  def copoint[A](p: F[A]): A = G.copoint(iso.to(p))
+
 }
 
 trait IsomorphismPlus[F[_], G[_]] extends Plus[F] {
