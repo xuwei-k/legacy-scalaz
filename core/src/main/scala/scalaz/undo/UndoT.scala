@@ -36,7 +36,6 @@ final case class UndoT[F[+_], S, +A](hstate: StateT[F, History[S], A]) {
 //
 
 trait UndoTInstances1 {
-  // Prefer Pointed over Functor
   implicit def undoTFunctor[S, F[+_]](implicit F0: Functor[F]): Functor[({type G[+x] = UndoT[F, S, x]})#G] = new UndoTFunctor[S, F] {
     implicit def F: Functor[F] = F0
   }

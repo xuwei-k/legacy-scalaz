@@ -137,7 +137,7 @@ trait Traverse[F[_]] extends Functor[F] with Foldable[F] { self =>
 
     /**
      * @param nat A natural transformation from `M` to `N` for which these properties hold:
-     *            `(a: A) => nat(Pointed[M].pure[A](a)) === Pointed[M].point[A](a)`
+     *            `(a: A) => nat(Applicative[M].pure[A](a)) === Applicative[M].point[A](a)`
      *            `(f: M[A => B], ma: M[A]) => nat(Applicative[M].ap(ma)(f)) === Applicative[N].ap(nat(ma))(nat(f))`
      */
     def naturality[N[_], M[_], A](nat: (M ~> N))

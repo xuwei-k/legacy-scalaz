@@ -230,7 +230,7 @@ trait IterateeTFunctions {
   }
 
   /**
-   * An iteratee that consumes all of the input into something that is PlusEmpty and Pointed.
+   * An iteratee that consumes all of the input into something that is PlusEmpty and Applicative.
    */
   def consume[E, F[_]: Monad, A[_]: PlusEmpty : Applicative]: IterateeT[E, F, A[E]] = {
     import scalaz.syntax.plus._
