@@ -104,9 +104,6 @@ trait KleisliInstances5 extends KleisliInstances6 {
   implicit def kleisliApplicativePlus[F[+_], R](implicit F0: ApplicativePlus[F]): ApplicativePlus[({type λ[α] = Kleisli[F, R, α]})#λ] = new ApplicativePlus[({type λ[α] = Kleisli[F, R, α]})#λ] with KleisliApplicative[F, R] with KleisliPlusEmpty[F, R] {
     implicit def F: ApplicativePlus[F] = F0
   }
-  implicit def kleisliArrId[F[+_]](implicit F0: Applicative[F]) = new KleisliArrIdArr[F] {
-    implicit def F: Applicative[F] = F0
-  }
   implicit def kleisliSemigroup[F[+_], A, B](implicit FB0: Semigroup[F[B]]) = new KleisliSemigroup[F, A, B] {
     implicit def FB = FB0
   }
@@ -236,23 +233,18 @@ private[scalaz] trait KleisliMonadPlus[F[+_], R] extends MonadPlus[({type λ[α]
 // (* *) -> *
 //
 
-private[scalaz] trait KleisliArrIdArr[F[+_]] extends ArrId[({type λ[α, β] = Kleisli[F, α, β]})#λ] {
-  implicit def F: Applicative[F]
-
-  def id[A]: Kleisli[F, A, A] = kleisli(a => F.point(a))
-
-  def arr[A, B](f: (A) => B): Kleisli[F, A, B] = kleisli(a => F.point(f(a)))
-}
-
 private[scalaz] trait KleisliArrow[F[+_]]
   extends Arrow[({type λ[α, β] = Kleisli[F, α, β]})#λ]
-  with KleisliArrIdArr[F]
   with Split[({type λ[α, β] = Kleisli[F, α, β]})#λ]
   with Choice[({type λ[α, β] = Kleisli[F, α, β]})#λ] {
 
   implicit def F: Monad[F]
 
   def compose[A, B, C](bc: Kleisli[F, B, C], ab: Kleisli[F, A, B]): Kleisli[F, A, C] = ab >=> bc
+
+  def id[A]: Kleisli[F, A, A] = kleisli(a => F.point(a))
+
+  def arr[A, B](f: (A) => B): Kleisli[F, A, B] = kleisli(a => F.point(f(a)))
 
   def first[A, B, C](f: Kleisli[F, A, B]): Kleisli[F, (A, C), (B, C)] = kleisli[F, (A, C), (B, C)] {
     case (a, c) => F.map(f.run(a))((b: B) => (b, c))

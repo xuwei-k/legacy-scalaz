@@ -77,8 +77,6 @@ trait Syntaxes {
 
   object category extends ToCategoryOps
 
-  object arrId extends ToArrIdOps
-
   object arrow extends ToArrowOps
 
   object choice extends ToChoiceOps
@@ -125,5 +123,5 @@ trait ToTypeClassOps
   with ToApplicativeOps with ToBindOps with ToMonadOps with ToCojoinOps with ToComonadOps
   with ToBifoldableOps with ToCozipOps
   with ToPlusOps with ToApplicativePlusOps with ToMonadPlusOps with ToTraverseOps with ToBifunctorOps
-  with ToBitraverseOps with ToArrIdOps with ToComposeOps with ToCategoryOps
+  with ToBitraverseOps with ToComposeOps with ToCategoryOps
   with ToArrowOps with ToFoldableOps with ToChoiceOps with ToSplitOps with ToZipOps with ToUnzipOps with ToMonadWriterOps with ToListenableMonadWriterOps
