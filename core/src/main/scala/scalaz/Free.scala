@@ -169,13 +169,9 @@ sealed abstract class Free[S[+_], +A](implicit S: Functor[S]) {
 object Trampoline extends TrampolineInstances
 
 trait TrampolineInstances {
-  implicit val trampolineMonad: Monad[Trampoline] with Copointed[Trampoline] = new Monad[Trampoline] with Copointed[Trampoline] {
+  implicit val trampolineMonad: Monad[Trampoline] = new Monad[Trampoline] {
     override def point[A](a: => A) = return_[Function0, A](a)
     def bind[A, B](ta: Trampoline[A])(f: A => Trampoline[B]) = ta flatMap f
-    def copoint[A](p: Free.Trampoline[A]): A = {
-      import std.function.function0Instance
-      p.run
-    }
   }
 }
 

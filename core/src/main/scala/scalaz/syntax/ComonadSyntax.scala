@@ -5,6 +5,7 @@ package syntax
 trait ComonadOps[F[_],A] extends Ops[F[A]] {
   implicit def F: Comonad[F]
   ////
+  def copoint: A = F.copoint(self)
 
   ////
 }

@@ -38,7 +38,7 @@ object Cokleisli extends CokleisliFunctions with CokleisliInstances {
 }
 
 trait CokleisliInstances1 {
-  implicit def cokleisliArrId[F[_]](implicit F0: Copointed[F]) = new CokleisliArrId[F] {
+  implicit def cokleisliArrId[F[_]](implicit F0: Comonad[F]) = new CokleisliArrId[F] {
     override implicit def F = F0
   }
 }
@@ -77,7 +77,7 @@ private[scalaz] trait CokleisliMonad[F[_], R] extends Monad[({type λ[α] = Cokl
 
 
 private[scalaz] trait CokleisliArrId[F[_]] extends ArrId[({type λ[α, β] = Cokleisli[F, α, β]})#λ] {
-  implicit def F: Copointed[F]
+  implicit def F: Comonad[F]
 
   override def id[A] = Cokleisli(F.copoint)
 }

@@ -68,11 +68,11 @@ trait IndexedStateT[F[+_], -S1, +S2, +A] { self =>
   }
 
   import Liskov._
-  def unlift[M[+_], FF[+_], AA >: A, S1m <: S1, S2m >: S2](implicit M: Copointed[M], ev: this.type <~< IndexedStateT[({type λ[+α] = M[FF[α]]})#λ, S1m, S2m, AA]): IndexedStateT[FF, S1m, S2m, AA] = new IndexedStateT[FF, S1m, S2m, AA] {
+  def unlift[M[+_], FF[+_], AA >: A, S1m <: S1, S2m >: S2](implicit M: Comonad[M], ev: this.type <~< IndexedStateT[({type λ[+α] = M[FF[α]]})#λ, S1m, S2m, AA]): IndexedStateT[FF, S1m, S2m, AA] = new IndexedStateT[FF, S1m, S2m, AA] {
     def apply(initial: S1m): FF[(S2m, AA)] = Copointed[M].copoint(ev(self)(initial))
   }
 
-  def unliftId[M[+_], AA >: A, S1m <: S1, S2m >: S2](implicit M: Copointed[M], ev: this.type <~< IndexedStateT[M, S1m, S2m, AA]): IndexedState[S1m, S2m, AA] = unlift[M, Id, AA, S1m, S2m]
+  def unliftId[M[+_], AA >: A, S1m <: S1, S2m >: S2](implicit M: Comonad[M], ev: this.type <~< IndexedStateT[M, S1m, S2m, AA]): IndexedState[S1m, S2m, AA] = unlift[M, Id, AA, S1m, S2m]
 
   def rwst[W, R, S >: S2 <: S1](implicit F: Functor[F], W: Monoid[W]): ReaderWriterStateT[F, R, W, S, A] = ReaderWriterStateT(
     (r, s) => F.map(self(s)) {
