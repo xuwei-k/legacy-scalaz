@@ -113,7 +113,7 @@ object build extends Build {
     id = "scalaz",
     base = file("."),
     settings = standardSettings ++ Unidoc.settings,
-    aggregate = Seq(core, concurrent, effect, example, iterv, iteratee, scalacheckBinding, tests, typelevel, xml)
+    aggregate = Seq(core, concurrent, effect, example, iterv, iteratee, scalacheckBinding, stream, tests, typelevel, xml)
   )
 
   lazy val core = Project(
@@ -172,6 +172,16 @@ object build extends Build {
       OsgiKeys.exportPackage := Seq("scalaz;version=${Bundle-Version};-split-package:=first")
     ),
     dependencies = Seq(effect)
+  )
+
+  lazy val stream = Project(
+    id = "stream",
+    base = file("stream"),
+    settings = standardSettings ++ Seq[Sett](
+      name := "scalaz-stream",
+      osgiExport("scalaz.stream")
+    ),
+    dependencies = Seq(concurrent)
   )
 
   lazy val typelevel = Project(
