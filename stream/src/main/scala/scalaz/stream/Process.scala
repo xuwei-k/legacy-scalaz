@@ -2,9 +2,9 @@ package scalaz.stream
 
 import scala.collection.immutable.IndexedSeq
 
-import scalaz.{Catchable,Monad,Leibniz}
+import scalaz.{Catchable,Monad,Liskov}
 import scalaz.concurrent.Task
-import Leibniz.{===, witness}
+import scalaz.Leibniz.{===,witness}
 
 /** 
  * A `Process[F,O]` represents a stream of `O` values which can interleave 
@@ -16,7 +16,7 @@ import Leibniz.{===, witness}
  * to evaluate some `F[A]` and resume processing once the result is available. 
  * See the constructor definitions in the `Process` companion object.
  */
-trait Process[F[_],+O] {
+trait Process[+F[_],+O] {
   
   import Process._
 
@@ -27,37 +27,37 @@ trait Process[F[_],+O] {
    * Generate a `Process` dynamically for each output of this `Process`, and
    * sequence these processes using `++`. 
    */
-  final def flatMap[O2](f: O => Process[F,O2]): Process[F,O2] = 
-    Process.bind(this)(f)
+  final def flatMap[F2[x]>:F[x], O2](f: O => Process[F2,O2]): Process[F2,O2] = 
+    Process.bind(this: Process[F2,O])(f)
   
   /** Run this `Process`, then, if it halts without an error, run `p2`. */
-  final def append[O2>:O](p2: => Process[F,O2]): Process[F,O2] = 
-    Process.append(this: Process[F,O2])(p2)
+  final def append[F2[x]>:F[x], O2>:O](p2: => Process[F2,O2]): Process[F2,O2] = 
+    Process.append(this: Process[F2,O2])(p2)
 
   /** Operator alias for `append`. */
-  final def ++[O2>:O](p2: => Process[F,O2]): Process[F,O2] = 
-    Process.append(this: Process[F,O2])(p2)
+  final def ++[F2[x]>:F[x], O2>:O](p2: => Process[F2,O2]): Process[F2,O2] = 
+    Process.append(this: Process[F2,O2])(p2)
 
   /** 
    * Run this process until it halts, then run it again and again, as
    * long as no errors occurt. 
    */
-  final def repeat: Process[F,O] = 
-    Process.repeat(this)
+  final def repeat[F2[x]>:F[x],O2>:O]: Process[F2,O2] = 
+    Process.repeat(this: Process[F2,O2])
 
   /** 
    * Collect the outputs of this `Process[F,O]`, given a `Monad[F]` in
    * which we can catch exceptions. This function is not tail recursive and
    * relies on the `Monad[F]` to ensure stack safety. 
    */
-  final def collect[O2>:O](implicit F: Monad[F], C: Catchable[F]): F[IndexedSeq[O2]] = 
-    Process.collect(this: Process[F,O2])(F,C)
+  final def collect[F2[x]>:F[x], O2>:O](implicit F: Monad[F2], C: Catchable[F2]): F2[IndexedSeq[O2]] = 
+    Process.collect(this: Process[F2,O2])(F,C)
 
   /**
    * Ignores output of this `Process`. A drained `Process` will never `Emit`.  
    */
-  final def drain[O2]: Process[F,O2] = 
-    Process.drain(this)
+  final def drain[F2[x]>:F[x]]: Process[F2,Nothing] = 
+    Process.drain[F2,O](this: Process[F2,O])
 
   /**
    * Halt this process, but give it an opportunity to run any requests it has 
@@ -91,10 +91,32 @@ trait Process[F[_],+O] {
    * which feed the `Tee` in a tail-recursive loop as long as
    * it is awaiting input from either side.
    */ 
-  final def tee[O2 >: O,O3,O4](p2: Process[F,O3])(t: Tee[O2,O3,O4]): Process[F,O4] = 
-    Process.tee(this: Process[F,O2], p2)(t)
+  final def tee[F2[x]>:F[x],O2 >: O,O3,O4](p2: Process[F2,O3])(t: Tee[O2,O3,O4]): Process[F2,O4] = 
+    Process.tee(this: Process[F2,O2], p2)(t)
 
-  // iamhere - just adding rest of the process functions
+  /** Run this `Process`, purely for its effects. */
+  final def run[F2[x]>:F[x]](implicit F: Monad[F2], C: Catchable[F2]): F2[Unit] = 
+    F.void(drain[F2].collect(F, C))
+
+  /** Skips any output elements not matching the predicate. */
+  def filter(f: O => Boolean): Process[F,O] = 
+    this |> Process.filter(f)
+
+  /** Halts this `Process` after emitting `n` elements. */
+  def take(n: Int): Process[F,O] = 
+    this |> Process.take[O](n)
+
+  /** Halts this `Process` as soon as the predicate tests false. */
+  def takeWhile(f: O => Boolean): Process[F,O] = 
+    this |> Process.takeWhile(f)
+
+  /** Ignores the first `n` elements output from this `Process`. */
+  def drop(n: Int): Process[F,O] = 
+    this |> Process.drop[O](n)
+
+  /** Ignores elements from the output of this `Process` until `f` tests false. */
+  def dropWhile(f: O => Boolean): Process[F,O] = 
+    this |> Process.dropWhile(f)
 }
 
 object Process {
@@ -107,17 +129,17 @@ object Process {
     head: Seq[O], 
     tail: Process[F,O]) extends Process[F,O]
 
-  case class Halt[F[_],O]() extends Process[F,O]
+  case object Halt extends Process[Nothing,Nothing]
 
   def map[F[_],O,O2](p: Process[F,O])(f: O => O2): Process[F,O2] = p match {
     case Await(req,recv,fb,c) => 
       Await[F,Any,O2](req, recv andThen (map(_)(f)), map(fb)(f), map(c)(f)) 
     case Emit(h, t) => Emit[F,O2](h map f, map(t)(f))
-    case Halt() => Halt()
+    case Halt => Halt
   }
 
   def append[F[_],O](p: Process[F,O])(p2: => Process[F,O]): Process[F,O] = p match {
-    case Halt() => p2
+    case Halt => p2
     case Emit(h, t) => emitAll(h, append(t)(p2))
     case Await(req,recv,fb,c) => 
       Await(req, recv andThen (append(_)(p2)), append(fb)(p2), c)
@@ -125,7 +147,7 @@ object Process {
 
   def bind[F[_],O,O2](p: Process[F,O])(f: O => Process[F,O2]): Process[F,O2] =
     p match {
-      case Halt() => Halt()
+      case Halt => Halt
       case Emit(o, t) => 
         if (o.isEmpty) t.flatMap(f)
         else f(o.head) ++ emitAll(o.tail, t).flatMap(f)
@@ -135,7 +157,7 @@ object Process {
 
   def repeat[F[_],O](p: Process[F,O]): Process[F,O] = {
     def go(cur: Process[F,O]): Process[F,O] = cur match {
-      case Halt() => go(p)
+      case Halt => go(p)
       case Await(req,recv,fb,c) => Await(req, recv andThen go, fb, c)
       case Emit(h, t) => emitAll(h, go(t))
     }
@@ -145,28 +167,18 @@ object Process {
   @annotation.tailrec
   def kill[F[_],O,O2](p: Process[F,O]): Process[F,O2] = p match {
     case Await(req,recv,fb,c) => c.drain 
-    case Halt() => Halt()
+    case Halt => Halt
     case Emit(h, t) => kill[F,O,O2](t)
   }
 
-  def drain[F[_],O,O2](p: Process[F,O]): Process[F,O2] = p match {
-    case Halt() => Halt()
+  def drain[F[_],O](p: Process[F,O]): Process[F,Nothing] = p match {
+    case Halt => Halt
     case Emit(h, t) => drain(t)
     case Await(req,recv,fb,c) => Await(
       req, recv andThen drain, 
       drain(fb), drain(c)) 
   }
 
-  /* 
-   * We define `Process1` as a type alias - see the companion object
-   * for `Process` below. Using that, we can then define `|>` once
-   * more. The definition is extremely similar to our previous 
-   * definition. 
-   * 
-   * The one subtlety is we make sure that if `p2` halts, we
-   * `kill` this process, giving it a chance to run any cleanup
-   * actions (like closing file handles, etc). 
-   */
   def pipe[F[_],O,O2](p: Process[F,O])(p2: Process1[O,O2]): Process[F,O2] = {
     // if this is emitting values and p2 is consuming values,
     // we feed p2 in a loop to avoid using stack space
@@ -175,18 +187,18 @@ object Process {
              recv: O => Process1[O,O2], 
              fb: Process1[O,O2],
              cleanup: Process1[O,O2]): Process[F,O2] = 
-      if (emit isEmpty) tail |> await1(recv, fb) 
+      if (emit isEmpty) tail |> receive1(recv, fb) 
       else recv(emit.head) match {
         case Await(_, recv2, fb2, c2) => 
           feed(emit.tail, tail, recv2, fb2, c2)
         case p => pipe(emitAll(emit.tail, tail))(p)
       }
     p2 match {
-      case Halt() => p.kill ++ Halt()
+      case Halt => p.kill ++ Halt
       case Emit(h, t) => emitAll(h, pipe(p)(t))
       case Await(req,recv,fb,c) => p match {
         case Emit(h,t) => feed(h, t, recv, fb, c)
-        case Halt() => pipe[F,O,O2](Halt())(fb)
+        case Halt => pipe[F,O,O2](Halt)(fb)
         case Await(req0,recv0,fb0,c0) => 
           await(req0)(i => pipe(recv0(i))(p2), 
                       pipe(fb0)(fb),
@@ -202,12 +214,11 @@ object Process {
               recv: O => Tee[O,O2,O3], 
               fb: Tee[O,O2,O3],
               c: Tee[O,O2,O3]): Process[F,O3] = 
-      if (emit isEmpty) (tail tee other)(await(L[O,O2])(recv, fb, c))
+      if (emit isEmpty) (tail tee other)(receiveL(recv, fb, c))
       else recv(emit.head) match {
-        case t2@Await(e, recv2, fb2, c2) => e.get match {
-          case Left(_) => feedL(emit.tail, tail, other, recv2, fb2, c2)
-          case _ => (Emit(emit.tail, tail) tee other)(t2)
-        }
+        case t2@Await(e, recv2, fb2, c2) => 
+          if (!e.isRight) feedL(emit.tail, tail, other, recv2, fb2, c2)
+          else (Emit(emit.tail, tail) tee other)(t2)
         case p => (Emit(emit.tail, tail) tee other)(p)
       }
     @annotation.tailrec
@@ -216,33 +227,31 @@ object Process {
               recv: O2 => Tee[O,O2,O3], 
               fb: Tee[O,O2,O3],
               c: Tee[O,O2,O3]): Process[F,O3] = 
-      if (emit isEmpty) (other tee tail)(await(R[O,O2])(recv, fb, c))
+      if (emit isEmpty) (other tee tail)(receiveR(recv, fb, c))
       else recv(emit.head) match {
-        case t2@Await(e, recv2, fb2, c2) => e.get match {
-          case Right(_) => feedR(emit.tail, tail, other, recv2, fb2, c2)
-          case _ => (other tee Emit(emit.tail, tail))(t2)
-        }
+        case t2@Await(e, recv2, fb2, c2) => 
+          if (e.isRight) feedR(emit.tail, tail, other, recv2, fb2, c2)
+          else (other tee Emit(emit.tail, tail))(t2)
         case p => (other tee Emit(emit.tail, tail))(p)
       }
     t match {
-      case Halt() => p.kill ++ p2.kill ++ Halt() 
+      case Halt => p.kill ++ p2.kill ++ Halt 
       case Emit(h,t) => Emit(h, (p tee p2)(t))
-      case Await(side, recv, fb, c) => side.get match {
-        case Left(isO) => p match {
-          case Halt() => p2.kill ++ Halt()
-          case Emit(o,ot) => feedL(o, ot, p2, witness(isO) andThen recv, fb, c) 
+      case Await(side, recv, fb, c) => 
+        if (!side.isRight) p match {
+          case Halt => p2.kill ++ Halt
+          case Emit(o,ot) => feedL(o, ot, p2, recv, fb, c) 
           case Await(reqL, recvL, fbL, cL) => 
             Await(reqL, recvL andThen (pnext => (pnext tee p2)(t)), 
                   (fbL tee p2)(t), (cL tee p2)(t))
         }
-        case Right(isO2) => p2 match {
-          case Halt() => p.kill ++ Halt()
-          case Emit(o,ot) => feedR(o, ot, p, witness(isO2) andThen recv, fb, c)
+        else p2 match {
+          case Halt => p.kill ++ Halt
+          case Emit(o,ot) => feedR(o, ot, p, recv, fb, c)
           case Await(reqR, recvR, fbR, cR) => 
             Await(reqR, recvR andThen (p3 => (p tee p3)(t)), 
                   (p tee fbR)(t), (p tee cR)(t))
         }
-      }
     }
   }
 
@@ -251,7 +260,7 @@ object Process {
     def go(cur: Process[F,O], acc: IndexedSeq[O]): F[IndexedSeq[O]] = 
       cur match {
         case Emit(h,t) => go(t, acc ++ h) 
-        case Halt() => F.point(acc)
+        case Halt => F.point(acc)
         case Await(req,recv,fb,c) => 
            F.bind (C.attempt(req)) {
              case Left(End) => go(fb, acc)
@@ -262,24 +271,23 @@ object Process {
       }
     go(p, IndexedSeq())
   }
-    
 
   def emitAll[F[_],O](
       head: Seq[O], 
-      tail: Process[F,O] = Halt[F,O]()): Process[F,O] = 
+      tail: Process[F,O] = Halt): Process[F,O] = 
     tail match {
       case Emit(h2,t) => Emit(head ++ h2, t)
       case _ => Emit(head, tail)
     }
   def emit[F[_],O](
       head: O, 
-      tail: Process[F,O] = Halt[F,O]()): Process[F,O] = 
+      tail: Process[F,O] = Halt): Process[F,O] = 
     emitAll(Stream(head), tail)
 
   def await[F[_],A,O](req: F[A])(
-      recv: A => Process[F,O] = (a: A) => Halt[F,O](), 
-      fallback: Process[F,O] = Halt[F,O](),
-      cleanup: Process[F,O] = Halt[F,O]()): Process[F,O] = 
+      recv: A => Process[F,O] = (a: A) => Halt, 
+      fallback: Process[F,O] = Halt,
+      cleanup: Process[F,O] = Halt): Process[F,O] = 
     Await(req, recv, fallback, cleanup)
 
   /* Special exception indicating normal termination */
@@ -297,7 +305,7 @@ object Process {
     def go(cur: Process[Task,O], acc: IndexedSeq[O]): IndexedSeq[O] = 
       cur match {
         case Emit(h,t) => go(t, acc ++ h) 
-        case Halt() => acc
+        case Halt => acc
         case Await(req,recv,fb,err) =>
           val next = 
             try recv(req.run)
@@ -332,48 +340,67 @@ object Process {
         o => emit(o, go(step, onExit)) // Emit the value and repeat 
       , await[Task,Unit,O](onExit)()  // Release resource when exhausted
       , await[Task,Unit,O](onExit)()) // or in event of error
-    await(acquire) ( r => go(step(r), release(r)), Halt(), Halt() )
+    await(acquire) ( r => go(step(r), release(r)), Halt, Halt )
   }
-  
-  /* 
-   * We now have nice, resource safe effectful sources, but we don't 
-   * have any way to transform them or filter them. Luckily we can 
-   * still represent the single-input `Process` type we introduced
-   * earlier, which we'll now call `Process1`.  
-   */
 
-  case class Is[I]() {
-    sealed trait f[X] { def is: X === I } // see definition in `Eq.scala`
-    val Get = new f[I] { def is = Leibniz.refl }
+  import annotation.unchecked.uncheckedVariance
+
+  case class Is[-I]() {
+    sealed trait f[X] { def witness: I => X }
+    case object Get extends f[I @uncheckedVariance] { 
+      def witness = (i: I @uncheckedVariance) => i 
+    }
   }
   def Get[I] = Is[I]().Get
 
   type Process1[I,O] = Process[Is[I]#f, O]
+
+  def await1[I]: Process1[I,I] = 
+    Await(Get[I], (i: I) => emit1(i).asInstanceOf[Process1[I,I]], Halt, Halt)
+
+  def receive1[I,O](recv: I => Process1[I,O], fallback: Process1[I,O] = Halt): Process1[I,O] = 
+    Await(Get[I], recv, fallback, Halt)
+
+  def emit1[O](h: O): Process1[Any,O] = emit(h, Halt)
   
-  def halt1[I,O]: Process1[I,O] = Halt[Is[I]#f, O]()
+  def emitAll1[O](h: Seq[O]): Process1[Any,O] = 
+    emitAll(h)
 
-  def await1[I,O](
-    recv: I => Process1[I,O],
-    fallback: Process1[I,O] = halt1[I,O]): Process1[I, O]  = 
-    Await(Get[I], recv, fallback, halt1)
+  /** Repeatedly echo the input; satisfies `x |> id == x` and `id |> x == x`. */
+  def id[I]: Process1[I,I] = 
+    await1[I].repeat
 
-  def emit1[I,O](h: O, tl: Process1[I,O] = halt1[I,O]): Process1[I,O] = 
-    emit(h, tl)
-  
-  def emitAll1[I,O](h: Seq[O], tl: Process1[I,O] = halt1[I,O]): Process1[I,O] = 
-    emitAll(h, tl)
-
+  /** Transform the input using the given function, `f`. */
   def lift[I,O](f: I => O): Process1[I,O] = 
-    await1[I,O]((i:I) => emit(f(i))) repeat
+    id[I] map f
   
+  /** Skips any elements of the input not matching the predicate. */
   def filter[I](f: I => Boolean): Process1[I,I] =
-    await1[I,I](i => if (f(i)) emit(i) else halt1) repeat
+    await1[I] flatMap (i => if (f(i)) emit1(i) else Halt) repeat
 
-  // we can define take, takeWhile, and so on as before
-
+  /** Passes through `n` elements of the input, then halt. */
   def take[I](n: Int): Process1[I,I] = 
-    if (n <= 0) halt1
-    else await1[I,I](i => emit(i, take(n-1)))
+    if (n <= 0) Halt
+    else await1[I] ++ take(n-1)
+
+  /** Passes through elements of the input as long as the predicate is true, then halt. */
+  def takeWhile[I](f: I => Boolean): Process1[I,I] = 
+    await1[I] flatMap (i => if (f(i)) emit1(i) ++ takeWhile(f) else Halt)
+
+  /** 
+   * Skips elements of the input while the predicate is true, 
+   * then passes through the remaining inputs. 
+   */
+  def dropWhile[I](f: I => Boolean): Process1[I,I] = 
+    await1[I] flatMap (i => if (f(i)) dropWhile(f) else id)
+
+  /** Reads a single element of the input, emits nothing, then halts. */
+  def skip: Process1[Any,Nothing] = await1[Any].flatMap(_ => Halt) 
+
+  /** Skips the first `n` elements of the input, then passes through the rest. */
+  def drop[I](n: Int): Process1[I,I] = 
+    if (n <= 0) id[I]
+    else skip ++ drop(n-1)
 
                           /*                       
 
@@ -388,40 +415,47 @@ object Process {
 
                            */
 
-  case class T[I,I2]() {
-    sealed trait f[X] { def get: Either[X === I, X === I2] }
-    val L = new f[I] { def get = Left(Leibniz.refl) }
-    val R = new f[I2] { def get = Right(Leibniz.refl) }
+  case class T[-I, -I2]() {
+    sealed trait f[-X] { def isRight: Boolean }
+    case object L extends f[I] { def isRight = false }
+    case object R extends f[I2] { def isRight = true } 
   }
-  def L[I,I2] = T[I,I2]().L
-  def R[I,I2] = T[I,I2]().R
+  def L[I] = T[I,Any]().L
+  def R[I2] = T[Any,I2]().R
 
   type Tee[I,I2,O] = Process[T[I,I2]#f, O]
   
   /* Again some helper functions to improve type inference. */
 
-  def awaitL[I,I2,O](
+  def awaitL[I]: Tee[I,Any,I] = 
+    receiveL[I,Any,I](emitT)
+
+  def awaitR[I2]: Tee[Any,I2,I2] = 
+    receiveR[Any,I2,I2](emitT)
+
+  def receiveL[I,I2,O](
       recv: I => Tee[I,I2,O], 
-      fallback: Tee[I,I2,O] = haltT[I,I2,O]): Tee[I,I2,O] = 
-    await[T[I,I2]#f,I,O](L)(recv, fallback)
+      fallback: Tee[I,I2,O] = Halt,
+      cleanup: Tee[I,I2,O] = Halt): Tee[I,I2,O] = 
+    await[T[I,I2]#f,I,O](L)(recv, fallback, cleanup)
 
-  def awaitR[I,I2,O](
+  def receiveR[I,I2,O](
       recv: I2 => Tee[I,I2,O], 
-      fallback: Tee[I,I2,O] = haltT[I,I2,O]): Tee[I,I2,O] = 
-    await[T[I,I2]#f,I2,O](R)(recv, fallback)
+      fallback: Tee[I,I2,O] = Halt,
+      cleanup: Tee[I,I2,O] = Halt): Tee[I,I2,O] = 
+    await[T[I,I2]#f,I2,O](R)(recv, fallback, cleanup)
 
-  def haltT[I,I2,O]: Tee[I,I2,O] = 
-    Halt[T[I,I2]#f,O]()
-
-  def emitT[I,I2,O](h: O, tl: Tee[I,I2,O] = haltT[I,I2,O]): Tee[I,I2,O] = 
-    emit(h, tl)
+  def emitT[O](h: O): Tee[Any,Any,O] = 
+    emit(h)
   
-  def emitAllT[I,I2,O](h: Seq[O], tl: Tee[I,I2,O] = haltT[I,I2,O]): Tee[I,I2,O] = 
-    emitAll(h, tl)
+  def emitAllT[O](h: Seq[O]): Tee[Any,Any,O] = 
+    emitAll(h, Halt)
 
-  def zipWith[I,I2,O](f: (I,I2) => O): Tee[I,I2,O] = 
-    awaitL[I,I2,O](i  => 
-    awaitR        (i2 => emitT(f(i,i2)))) repeat
+  def zipWith[I,I2,O](f: (I,I2) => O): Tee[I,I2,O] = { for {
+    i <- awaitL[I]
+    i2 <- awaitR[I2]
+    r <- emitT(f(i,i2))
+  } yield r } repeat
 
   def zip[I,I2]: Tee[I,I2,(I,I2)] = zipWith((_,_))
 
@@ -433,33 +467,35 @@ object Process {
    
   def zipWithAll[I,I2,O](padI: I, padI2: I2)(
                          f: (I,I2) => O): Tee[I,I2,O] = {
-    val fbR = passR[I,I2] map (f(padI, _    ))                     
-    val fbL = passL[I,I2] map (f(_   , padI2))
-    awaitLOr(fbR)(i => 
-    awaitROr(fbL)(i2 => emitT(f(i,i2)))) repeat
+    val fbR = passR[I2] map (f(padI, _    ))
+    val fbL = passL[I]  map (f(_   , padI2))
+    receiveLOr(fbR: Tee[I,I2,O])(i => 
+    receiveROr(fbL: Tee[I,I2,O])(i2 => emitT(f(i,i2)))) repeat
   }
 
   def zipAll[I,I2](padI: I, padI2: I2): Tee[I,I2,(I,I2)] = 
     zipWithAll(padI, padI2)((_,_))
   
-  def awaitLOr[I,I2,O](fallback: Tee[I,I2,O])(
+  def receiveLOr[I,I2,O](fallback: Tee[I,I2,O])(
                        recvL: I => Tee[I,I2,O]): Tee[I,I2,O] =
-    awaitL(recvL, fallback)
+    receiveL(recvL, fallback)
 
-  def awaitROr[I,I2,O](fallback: Tee[I,I2,O])(
+  def receiveROr[I,I2,O](fallback: Tee[I,I2,O])(
                        recvR: I2 => Tee[I,I2,O]): Tee[I,I2,O] =
-    awaitR(recvR, fallback)
+    receiveR(recvR, fallback)
 
   /* Ignores all input from left. */
-  def passR[I,I2]: Tee[I,I2,I2] = awaitR(emitT(_, passR))
+  def passR[I2]: Tee[Any,I2,I2] = awaitR[I2].flatMap(emitT).repeat
   
   /* Ignores input from the right. */
-  def passL[I,I2]: Tee[I,I2,I] = awaitL(emitT(_, passL))
+  def passL[I]: Tee[I,Any,I] = awaitL[I].flatMap(emitT).repeat
   
   /* Alternate pulling values from the left and the right inputs. */
-  def interleaveT[I]: Tee[I,I,I] = 
-    awaitL[I,I,I](i =>
-    awaitR       (i2 => emitAllT(Seq(i,i2)))) repeat
+  def interleaveT[I]: Tee[I,I,I] = repeat { for {
+    i1 <- awaitL[I]
+    i2 <- awaitR[I]
+    r <- emitT(i1) ++ emitT(i2)
+  } yield r }
 
                           /*                       
 
@@ -474,7 +510,7 @@ object Process {
 
   def eval[F[_],O](p: Process[F, F[O]]): Process[F,O] = 
     p match {
-      case Halt() => Halt()
+      case Halt => Halt
       case Emit(h, t) => 
         if (h.isEmpty) eval(t)
         else await[F,O,O](h.head)(o => emit(o, eval(emitAll(h.tail, t))))
