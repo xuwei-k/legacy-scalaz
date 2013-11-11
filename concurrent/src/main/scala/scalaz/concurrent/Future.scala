@@ -10,6 +10,7 @@ import scalaz.Free.Trampoline
 import scalaz.Trampoline
 import scalaz.syntax.monad._
 import scalaz.{\/, -\/, \/-}
+import scalaz.\/._
 
 import scala.concurrent.SyncVar
 import scala.concurrent.duration._
@@ -59,6 +60,22 @@ sealed abstract class Future[+A] {
     case Now(a) => Suspend(() => f(a))
     case Suspend(thunk) => BindSuspend(thunk, f)
     case Async(listen) => BindAsync(listen, f)
+    case Residual(used, closed, status, original) => Suspend { () =>
+      if (used.compareAndSet(false, true)) {
+        // need to avoid race condition here if we flatMap just as we are completing
+        // race to set a 'listening' boolean
+        if (closed.compareAndSet(false, true))
+          status().fold(Async(_), Now(_)).flatMap(f)
+        else { // wait for status to become true
+          def go: A = status() match {
+            case -\/(_) => go
+            case \/-(a) => a
+          }
+          f(go)
+        }
+      }
+      else original.flatMap(f)
+    }
     case BindSuspend(thunk, g) =>
       Suspend(() => BindSuspend(thunk, g andThen (_ flatMap f)))
     case BindAsync(listen, g) =>
@@ -175,7 +192,7 @@ sealed abstract class Future[+A] {
 
   def runFor(timeout: Duration): A = runFor(timeout.toMillis)
 
-  /** Like `runFor`, but returns `TimeoutException` as left value. 
+  /** Like `runFor`, but returns `TimeoutException` as left value.
     * Will not report any other exceptions that may be raised during computation of `A`*/
   def attemptRunFor(timeoutInMillis: Long): Throwable \/ A = {
     val sync = new SyncVar[Throwable \/ A]
@@ -194,26 +211,26 @@ sealed abstract class Future[+A] {
    * and attempts to cancel the running computation.
    * This implementation will not block the future's execution thread
    */
-  def timed(timeoutInMillis: Long)(implicit scheduler:ScheduledExecutorService): Future[Throwable \/ A] =  
-    //instead of run this though chooseAny, it is run through simple primitive, 
+  def timed(timeoutInMillis: Long)(implicit scheduler:ScheduledExecutorService): Future[Throwable \/ A] =
+    //instead of run this though chooseAny, it is run through simple primitive,
     //as we are never interested in results of timeout callback, and this is more resource savvy
     async[Throwable \/ A] { cb =>
       val cancel = new AtomicBoolean(false)
       val done = new AtomicBoolean(false)
       scheduler.schedule(new Runnable {
-        def run() { 
+        def run() {
           if (done.compareAndSet(false,true)) {
             cancel.set(true)
             cb(-\/(new TimeoutException()))
-          } 
+          }
         }
       }
       , timeoutInMillis, TimeUnit.MILLISECONDS)
-      
-      runAsyncInterruptibly(a => if(done.compareAndSet(false,true)) cb(\/-(a)), cancel) 
+
+      runAsyncInterruptibly(a => if(done.compareAndSet(false,true)) cb(\/-(a)), cancel)
     }
-    
-    
+
+
 
   def timed(timeout: Duration)(implicit scheduler:ScheduledExecutorService =
       Strategy.DefaultTimeoutScheduler): Future[Throwable \/ A] = timed(timeout.toMillis)
@@ -232,10 +249,18 @@ object Future {
   case class Now[+A](a: A) extends Future[A]
   case class Async[+A](onFinish: (A => Trampoline[Unit]) => Unit) extends Future[A]
   case class Suspend[+A](thunk: () => Future[A]) extends Future[A]
+  case class Residual[A](used: AtomicBoolean,
+                         closed: AtomicBoolean,
+                         status: () => ((A => Trampoline[Unit]) => Unit) \/ A,
+                         original: Future[A]) extends Future[A]
   case class BindSuspend[A,B](thunk: () => Future[A], f: A => Future[B]) extends Future[B]
   case class BindAsync[A,B](onFinish: (A => Trampoline[Unit]) => Unit,
                             f: A => Future[B]) extends Future[B]
 
+  //private def residualActor(S: Strategy): Actor[A] = {
+  //
+  //  Actor.actor { a => ??? }
+  //}
   // NB: considered implementing Traverse and Comonad, but these would have
   // to run the Future; leaving out for now
 
@@ -258,35 +283,35 @@ object Future {
 
         val fs = (h +: t).view.zipWithIndex.map { case (f, ind) =>
           val used = new AtomicBoolean(false)
-          val ref = new AtomicReference[A]
+          val closed = new AtomicBoolean(false)
+          val ref = new AtomicReference[Option[A]](None)
           val listener = new AtomicReference[A => Trampoline[Unit]](null)
-          val residual = Async { (cb: A => Trampoline[Unit]) =>
-             if (used.compareAndSet(false, true)) { // get residual value from already running Future
-               if (listener.compareAndSet(null, cb)) {} // we've successfully registered ourself with running task
-               else cb(ref.get).run // the running task has completed, use its result
-             }
-             else // residual value used up, revert to original Future
-               f.listen(cb)
-          }
-          (ind, f, residual, listener, ref)
+          val listen = (cb: A => Trampoline[Unit]) => { listener.set(cb); closed.set(true) }
+          val residual = Residual(
+            used,
+            closed,
+            () => ref.get match { case None => left(listen); case Some(a) => right(a) },
+            f
+          )
+          (ind, f, closed, residual, listener, ref)
         }.toIndexedSeq
 
-        fs.foreach { case (ind, f, residual, listener, ref) =>
+        fs.foreach { case (ind, f, closed, residual, listener, ref) =>
           f.listen { a =>
-            ref.set(a)
+            ref.set(Some(a))
             val notifyWinner =
               // If we're the first to finish, invoke `cb`, passing residuals
               if (won.compareAndSet(false, true))
-                cb((a, fs.collect { case (i,_,rf,_,_) if i != ind => rf }))
+                cb((a, fs.collect { case (i,_,_,rf,_,_) if i != ind => rf }))
               else {
                 Trampoline.done(()) // noop; another thread will have already invoked `cb` w/ our residual
               }
-            val notifyListener =
-              if (listener.compareAndSet(null, finishedCallback.asInstanceOf[A => Trampoline[Unit]]))
-                // noop; no listeners yet, any added after this will use result stored in `ref`
-                Trampoline.done(())
-              else // there is a registered listener, invoke it with the result
+            val notifyListener = {
+              if (closed.compareAndSet(false, true))
+                Trampoline.done(()) // we beat the listener, so it will use result stored in `ref`
+              else // the listener won, invoke it with the result
                 listener.get.apply(a)
+            }
             notifyWinner *> notifyListener
           }
         }
@@ -374,4 +399,14 @@ object Future {
    */
   def gatherUnordered[A](fs: Seq[Future[A]]): Future[List[A]] =
     futureInstance.gatherUnordered(fs)
+}
+
+object Main extends App {
+  val F = Nondeterminism[Future]
+  val N = 10000
+  val worstCaseScenario =
+    (0 until N).foldLeft(Future { Thread.sleep(50000) })((a,b) =>
+      F.both(a, Future { b }).map(_._1)
+    )
+  worstCaseScenario.run
 }
