@@ -64,20 +64,24 @@ sealed abstract class Future[+A] {
       if (used.compareAndSet(false, true)) {
         // need to avoid race condition here if we flatMap just as we are completing
         // race to set a 'listening' boolean
-        if (closed.compareAndSet(false, true))
+        if (closed.compareAndSet(false, true)) {
+        //  println("used/closed")
           status().fold(Async(_), Now(_)).flatMap(f)
-        else { // wait for status to become true
-          def go: A = status() match {
-            case -\/(_) => go
-            case \/-(a) => a
-          }
-          f(go)
+        }
+        else status() match {
+          case -\/(_) => sys.error("unpossible")
+          case \/-(a) => f(a)
         }
       }
-      else original.flatMap(f)
+      else {
+        // println("loser flatMap residual")
+        original.flatMap(f)
+      }
     }
     case BindSuspend(thunk, g) =>
       Suspend(() => BindSuspend(thunk, g andThen (_ flatMap f)))
+    case ChooseAny(fs, k) =>
+      Suspend(() => ChooseAny(fs, k andThen (_ flatMap f)))
     case BindAsync(listen, g) =>
       Suspend(() => BindAsync(listen, g andThen (_ flatMap f)))
   }
@@ -93,6 +97,27 @@ sealed abstract class Future[+A] {
     (this.step: @unchecked) match {
       case Now(a) => cb(a).run
       case Async(onFinish) => onFinish(cb)
+      case Residual(used,closed,status,original) =>
+        if (used.compareAndSet(false, true)) {
+          // need to avoid race condition here if we flatMap just as we are completing
+          // race to set a 'listening' boolean
+          // println("listen:woot")
+          if (closed.compareAndSet(false, true)) {
+            // println("listen:used/closed")
+            status().fold(Async(_), Now(_)).listen(cb)
+          }
+          else status() match {
+            case -\/(_) => sys.error("unpossible")
+            case \/-(a) => cb(a).run
+          }
+        }
+        else {
+          // println("listen:loser listens on residual")
+          original.listen(cb)
+        }
+      case ChooseAny(fs, k) =>
+        listenChooseAny(fs.head, fs.tail)(x =>
+          Trampoline.delay(k(x)) map (_ listen cb))
       case BindAsync(onFinish, g) =>
         onFinish(x => Trampoline.delay(g(x)) map (_ listen cb))
     }
@@ -126,6 +151,7 @@ sealed abstract class Future[+A] {
   final def step: Future[A] = this match {
     case Suspend(thunk) => thunk().step
     case BindSuspend(thunk, f) => (thunk() flatMap f).step
+    case Residual(_,_,get,_) if get().isRight => Now(get().toOption.get)
     case _ => this
   }
 
@@ -135,6 +161,7 @@ sealed abstract class Future[+A] {
     if (!cancel.get) this match {
       case Suspend(thunk) => thunk().stepInterruptibly(cancel)
       case BindSuspend(thunk, f) => (thunk() flatMap f).stepInterruptibly(cancel)
+      case Residual(_,_,get,_) if get().isRight => Now(get().toOption.get)
       case _ => this
     }
     else this
@@ -249,6 +276,7 @@ object Future {
   case class Now[+A](a: A) extends Future[A]
   case class Async[+A](onFinish: (A => Trampoline[Unit]) => Unit) extends Future[A]
   case class Suspend[+A](thunk: () => Future[A]) extends Future[A]
+  case class ChooseAny[A,B](fs: Seq[Future[A]], f: Pair[A, Seq[Future[A]]] => Future[B]) extends Future[B]
   case class Residual[A](used: AtomicBoolean,
                          closed: AtomicBoolean,
                          status: () => ((A => Trampoline[Unit]) => Unit) \/ A,
@@ -257,69 +285,64 @@ object Future {
   case class BindAsync[A,B](onFinish: (A => Trampoline[Unit]) => Unit,
                             f: A => Future[B]) extends Future[B]
 
-  //private def residualActor(S: Strategy): Actor[A] = {
-  //
-  //  Actor.actor { a => ??? }
-  //}
   // NB: considered implementing Traverse and Comonad, but these would have
   // to run the Future; leaving out for now
+
+  def listenChooseAny[A](h: Future[A], t: Seq[Future[A]])(
+                         cb: Pair[A, Seq[Future[A]]] => Trampoline[Unit]): Unit = {
+    //val fs = scala.util.Random.shuffle { (h +: t).zipWithIndex }
+    //val completedResiduals = fs.collect {
+    //  case (r@Residual(_,_,s,_), i) if s().isRight => (r,i)
+    //}
+    val won = new AtomicBoolean(false) // threads race to set this
+
+    val fs = (h +: t).view.zipWithIndex.map { case (f, ind) =>
+      val used = new AtomicBoolean(false)
+      val closed = new AtomicBoolean(false)
+      val ref = new AtomicReference[Option[A]](None)
+      val listener = new AtomicReference[A => Trampoline[Unit]](null)
+      val listen = (cb: A => Trampoline[Unit]) => { listener.set(cb); closed.set(true) }
+      val residual = Residual(
+        used,
+        closed,
+        () => ref.get match { case None => left(listen); case Some(a) => right(a) },
+        f
+      )
+      (ind, f, closed, residual, listener, ref)
+    }.toIndexedSeq
+
+    fs.foreach { case (ind, f, closed, residual, listener, ref) =>
+      f.listen { a =>
+        println("got: " + a)
+        ref.set(Some(a))
+        val notifyWinner =
+          // If we're the first to finish, invoke `cb`, passing residuals
+          if (won.compareAndSet(false, true))
+            cb((a, fs.collect { case (i,_,_,rf,_,_) if i != ind => rf }))
+          else {
+            Trampoline.done(()) // noop; another thread will have already invoked `cb` w/ our residual
+          }
+        val notifyListener = {
+          if (closed.compareAndSet(false, true))
+            Trampoline.done(()) // we beat the listener, so it will use result stored in `ref`
+          else // the listener won, invoke it with the result
+            listener.get.apply(a)
+        }
+        notifyWinner *> notifyListener
+      }
+    }
+  }
+
+  private val finishedCallback: String => Trampoline[Unit] =
+    s => sys.error("impossible, since there can only be one runner of chooseAny")
 
   implicit val futureInstance: Nondeterminism[Future] = new Nondeterminism[Future] {
     def bind[A,B](fa: Future[A])(f: A => Future[B]): Future[B] =
       fa flatMap f
     def point[A](a: => A): Future[A] = now(a)
 
-    def chooseAny[A](h: Future[A], t: Seq[Future[A]]): Future[(A, Seq[Future[A]])] = {
-      Async { cb =>
-        // The details of this implementation are a bit tricky, but the general
-        // idea is to run all futures in parallel, returning whichever result
-        // becomes available first.
-
-        // To account for the fact that the losing computations are still
-        // running, we construct special 'residual' Futures for the losers
-        // that will first return from the already running computation,
-        // then revert back to running the original Future.
-        val won = new AtomicBoolean(false) // threads race to set this
-
-        val fs = (h +: t).view.zipWithIndex.map { case (f, ind) =>
-          val used = new AtomicBoolean(false)
-          val closed = new AtomicBoolean(false)
-          val ref = new AtomicReference[Option[A]](None)
-          val listener = new AtomicReference[A => Trampoline[Unit]](null)
-          val listen = (cb: A => Trampoline[Unit]) => { listener.set(cb); closed.set(true) }
-          val residual = Residual(
-            used,
-            closed,
-            () => ref.get match { case None => left(listen); case Some(a) => right(a) },
-            f
-          )
-          (ind, f, closed, residual, listener, ref)
-        }.toIndexedSeq
-
-        fs.foreach { case (ind, f, closed, residual, listener, ref) =>
-          f.listen { a =>
-            ref.set(Some(a))
-            val notifyWinner =
-              // If we're the first to finish, invoke `cb`, passing residuals
-              if (won.compareAndSet(false, true))
-                cb((a, fs.collect { case (i,_,_,rf,_,_) if i != ind => rf }))
-              else {
-                Trampoline.done(()) // noop; another thread will have already invoked `cb` w/ our residual
-              }
-            val notifyListener = {
-              if (closed.compareAndSet(false, true))
-                Trampoline.done(()) // we beat the listener, so it will use result stored in `ref`
-              else // the listener won, invoke it with the result
-                listener.get.apply(a)
-            }
-            notifyWinner *> notifyListener
-          }
-        }
-      }
-    }
-
-    private val finishedCallback: String => Trampoline[Unit] =
-      s => sys.error("impossible, since there can only be one runner of chooseAny")
+    def chooseAny[A](h: Future[A], t: Seq[Future[A]]): Future[(A, Seq[Future[A]])] =
+      ChooseAny(h +: t, (p: (A,Seq[Future[A]])) => Now(p))
 
     // implementation runs all threads, dumping to a shared queue
     // last thread to finish invokes the callback with the results
@@ -402,11 +425,15 @@ object Future {
 }
 
 object Main extends App {
-  val F = Nondeterminism[Future]
-  val N = 10000
+  val F = Nondeterminism[scalaz.concurrent.Future]
+  val N = 100
+  val i = new AtomicInteger(0)
+  val f = Future { Thread.sleep(1000) }
   val worstCaseScenario =
-    (0 until N).foldLeft(Future { Thread.sleep(50000) })((a,b) =>
-      F.both(a, Future { b }).map(_._1)
+    (0 until N).foldLeft(f)((a,b) =>
+      F.both(a map (_ => i.getAndIncrement), Future { b }).map(_._1)
     )
+  val t = System.currentTimeMillis
   worstCaseScenario.run
+  println ((System.currentTimeMillis - t) / 1000.0)
 }
